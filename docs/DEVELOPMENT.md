@@ -134,8 +134,9 @@ Block-break logging respects the Mods switch. The test is still a hook on a
 break attempt, not a confirmed progression event.
 
 The native version's build metadata, executable hash, and startup marker are
-better identity checks than its Nightly banner, which may use the base release's
-label. Do not treat a successful build alone as proof that a running session used it.
+better identity checks than a saved version selection alone. Our pinned native
+build reports Horizon 0.1.0, while the regular installed Nightly reports its dated
+build. Do not treat a successful build alone as proof that a running session used it.
 
 ## Significant changes
 

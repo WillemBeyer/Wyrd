@@ -40,8 +40,39 @@ fast fixture. No playable alpha or registry-ready release is claimed.
 
 ## Visible starter logging — 2026-11-04
 
-- Inspected the existing launcher build metadata: Wyrd 0.1.0 is included on pinned Horizon ba6344a; the displayed Nightly label comes from the newer base installation.
+- Inspected the existing launcher build metadata: Wyrd 0.1.0 is included on pinned Horizon ba6344a. The initial inference about the Nightly banner was not proof of the running executable; see the direct-launch evidence below.
 - The prior runtime used raw stderr, so latest.log was not a reliable place to look for the test message.
 - Runtime now uses the game's existing log crate at INFO level. A regression test captures the logging record and checks its level and coordinates.
 - Windows cargo check, formatting, clippy, both runtime tests and both packaging tests passed.
 - Full game rebuild/playtest of this logging change still needs the development shortcut; CI covers the compiled bundle fixture separately.
+
+## Native registration and real-game smoke test — 2026-11-04
+
+- Setup fix commit: `f646830`; GitHub formatting, clippy, runtime tests,
+  compiled three-hook fixture/AST audit and packaging checks all passed:
+  https://github.com/WillemBeyer/Wyrd/actions/runs/41914077053
+- The tiny fixture now exercises mod-list registration, local diagnostic command
+  handling and preservation of the original block-break method, not only logging.
+- Actual launcher build on Horizon `ba6344a` succeeded with the launcher's managed
+  Rust 1.99.1 and Mixins `e8cd0aa38cffef49cb2e088ef716baa107148c02`.
+  Installed version: `native-ba6344a-9bf0349e7331`, dev profile. Compilation of
+  the changed game crate took 25.21 s; a subsequent cached build/install took
+  329 s including resource copying. A completed compiler line is not a completed install.
+- Windows source audit of the real pinned export and actual staged source passed:
+  only the three declared HEAD statements and runtime module differed.
+- Direct launcher invocation used the installed native executable (checked by
+  process path), rather than relying on an already-open launcher window. Earlier
+  supplied logs reported the regular Nightly; the direct native run reports
+  Horizon 0.1.0. Always verify the executable and startup marker as well as metadata.
+- A separate **Wyrd Diagnostic** creative world was used; existing worlds were not modified.
+- Startup log: `[wyrd] Native scaffold loaded (0.1.0)` appeared on both client
+  and integrated-server threads.
+- `/wyrd` produced local chat and INFO output confirming the mod was enabled.
+- The real player-action mining path produced
+  `[wyrd] Breaking block at -22, 65, 2` on the server thread.
+- Options > Mods UI reported button `wyrd-0-1-0`, label **Wyrd 0.1.0: ON**.
+- The diagnostic session was saved and closed through Horizon's own quit command.
+
+This verifies native loading, registration, diagnostics and a break-attempt hook;
+it does not implement or validate item memory, magic, or compatibility with a
+different Horizon source revision.
