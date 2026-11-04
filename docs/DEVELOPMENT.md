@@ -103,7 +103,7 @@ built game's logs for `[wyrd] Breaking block at ...`. Do not test with valued sa
 
 Close the running Wyrd game, then double-click `rebuild.bat` in the repository
 root. It builds the local `mixins/wyrd` folder into instance `wyrd-dev` (Wyrd Dev)
-with `--profile dev`. It keeps the output visible and reports build failures.
+with `--profile performance`. It keeps the output visible and reports build failures.
 After success, run `play-wyrd.bat` to launch the instance from its saved build selection. An already-open launcher window may retain an older selection. The script does
 not start the game, update Horizon, or change the global build profile.
 
@@ -116,6 +116,20 @@ their own launcher path. `HORIZON_INSTANCE` optionally overrides the instance ID
 Run `rebuild.bat --check` in a command prompt to validate paths and print the
 build command without compiling. Running the normal shortcut explicitly trusts
 the repository's native mod code with the same access as the game.
+
+## Windows startup stack overflow on the pinned game
+
+The unoptimized `dev` game build can abort during normal title-screen startup
+with `main has overflowed its stack` / Windows status `0xc00000fd` on this Horizon
+pin. Opening a world directly did not reproduce this, so world-only testing was
+insufficient. This happens before Wyrd's registration marker.
+
+`rebuild.bat` therefore uses the supported `performance` profile. It still keeps
+incremental builds and cached dependencies; it is not the slow full-release/LTO
+profile. Changing profiles recompiles the game crate once. Do not use the `dev`
+profile on this pin without repeating the normal title-screen startup test.
+Normal startup to the title screen, opening Mods, and clean exit were verified
+with the performance executable. See VALIDATION.md for the installed-build result.
 
 ## Verify the loaded mod
 

@@ -27,14 +27,15 @@ echo.
 echo Launcher: "%LAUNCHER%"
 echo Instance: "%INSTANCE%"
 echo Source:   "%BUNDLE%"
-echo Profile:  dev
+echo Profile:  performance
 echo.
 if /i "%~1"=="--check" goto check_ok
 echo Close the Wyrd game before rebuilding.
+echo Performance keeps incremental builds and avoids a startup stack overflow on this Horizon pin.
 echo This builds the local mod with full native-code access to your computer.
 echo Build output follows; the first build takes longer than later rebuilds.
 echo.
-"%LAUNCHER%" native-build "%BUNDLE%" --instance "%INSTANCE%" --profile dev --trust-native-code
+"%LAUNCHER%" native-build "%BUNDLE%" --instance "%INSTANCE%" --profile performance --trust-native-code
 set "RESULT=%ERRORLEVEL%"
 if not "%RESULT%"=="0" goto build_failed
 echo.
@@ -45,7 +46,7 @@ exit /b 0
 
 :check_ok
 echo Paths are valid. No build was started.
-echo Command: "%LAUNCHER%" native-build "%BUNDLE%" --instance "%INSTANCE%" --profile dev --trust-native-code
+echo Command: "%LAUNCHER%" native-build "%BUNDLE%" --instance "%INSTANCE%" --profile performance --trust-native-code
 exit /b 0
 
 :missing_bundle
