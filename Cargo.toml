@@ -1,0 +1,17 @@
+[package]
+name = "wyrd"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+license = "GPL-3.0-only"
+description = "Wyrd: adventure-shaped item memory and magic for Horizon"
+repository = "https://github.com/WillemBeyer/Wyrd"
+publish = false
+
+[lib]
+# This exact source is also injected as a same-crate module by horizon-mixins.
+path = "mixins/wyrd/runtime.rs"
+
+[workspace]
+members = ["tools/audit"]
+resolver = "2"

@@ -1,0 +1,23 @@
+# Validation
+
+Wyrd does not inherit the upstream template's validation claims. The checked-in
+compatibility target comes from the upstream template; it is not a claim of
+Wyrd compatibility with the latest Nightly.
+
+Setup checks performed on 2026-11-04 are recorded below after execution.
+GitHub Actions runs formatting, lint, standalone tests, the actual compiled
+bundle fixture/AST audit, and source packaging on Ubuntu for pushes and PRs.
+
+Full pinned-Horizon stage/check/test and an interactive game session are separate
+checks; see docs/DEVELOPMENT.md. No player resources or worlds are needed for the
+fast fixture. No playable alpha or registry-ready release is claimed.
+
+## Local setup results — 2026-11-04
+
+- Windows / Python 3.13: two source-packaging tests passed, including deterministic bytes, bundled notices and rejection of inconsistent Horizon pins.
+- Python compileall: passed for the tooling.
+- Source package generated: target/wyrd-0.1.0.hnmod (development artifact, ignored by Git).
+- Existing GPLv3 LICENSE is unchanged.
+- Local full stage/check/test attempts stop at the inherited Linux-only fcntl import. The installed Ubuntu has Python 3.10 and no Rust on PATH; these checks were not completed locally.
+- Rust formatting, clippy, unit tests and compiled fixture: delegated to the checked-in Ubuntu GitHub Actions workflow; its result must be checked after push.
+- Full pinned-game build and interactive playtest: not performed. No game compatibility or playable magic features are claimed.
