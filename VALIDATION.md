@@ -37,3 +37,11 @@ fast fixture. No playable alpha or registry-ready release is claimed.
 - Cargo metadata successfully loads the Wyrd workspace on Windows.
 - cargo check, formatting, clippy with warnings denied, and workspace tests all passed on Windows.
 - Existing VS Code processes need a full restart to receive the user PATH update. The editor UI was not restarted automatically.
+
+## Visible starter logging — 2026-11-04
+
+- Inspected the existing launcher build metadata: Wyrd 0.1.0 is included on pinned Horizon ba6344a; the displayed Nightly label comes from the newer base installation.
+- The prior runtime used raw stderr, so latest.log was not a reliable place to look for the test message.
+- Runtime now uses the game's existing log crate at INFO level. A regression test captures the logging record and checks its level and coordinates.
+- Windows cargo check, formatting, clippy, both runtime tests and both packaging tests passed.
+- Full game rebuild/playtest of this logging change still needs the development shortcut; CI covers the compiled bundle fixture separately.

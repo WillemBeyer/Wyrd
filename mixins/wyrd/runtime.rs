@@ -32,7 +32,7 @@ pub fn block_break_message(pos: [i32; 3]) -> String {
 }
 
 pub fn before_break(pos: [i32; 3]) {
-    eprintln!("{}", block_break_message(pos));
+    log::info!("{}", block_break_message(pos));
 }
 
 #[cfg(test)]
@@ -44,6 +44,39 @@ mod tests {
         assert_eq!(
             block_break_message([-3, 64, 12]),
             "[wyrd] Breaking block at -3, 64, 12"
+        );
+    }
+
+    #[test]
+    fn break_attempt_reaches_the_info_logger() {
+        use std::sync::Mutex;
+
+        static MESSAGES: Mutex<Vec<String>> = Mutex::new(Vec::new());
+        struct Capture;
+        impl log::Log for Capture {
+            fn enabled(&self, _: &log::Metadata<'_>) -> bool {
+                true
+            }
+            fn log(&self, record: &log::Record<'_>) {
+                MESSAGES
+                    .lock()
+                    .unwrap()
+                    .push(format!("{} {}", record.level(), record.args()));
+            }
+            fn flush(&self) {}
+        }
+        static LOGGER: Capture = Capture;
+        log::set_logger(&LOGGER).unwrap();
+        log::set_max_level(log::LevelFilter::Info);
+
+        before_break([-3, 64, 12]);
+
+        assert!(
+            MESSAGES
+                .lock()
+                .unwrap()
+                .iter()
+                .any(|message| { message == "INFO [wyrd] Breaking block at -3, 64, 12" })
         );
     }
 }

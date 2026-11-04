@@ -38,7 +38,7 @@ def main():
         original, stage = scratch/'original', scratch/'stage'
         (original/'crates/horizon-client/src').mkdir(parents=True)
         (original/'Cargo.toml').write_text('[workspace]\nmembers=["crates/horizon-client"]\nresolver="2"\n')
-        (original/'crates/horizon-client/Cargo.toml').write_text('[package]\nname="horizon-client"\nversion="0.1.0"\nedition="2024"\n')
+        (original/'crates/horizon-client/Cargo.toml').write_text('[package]\nname="horizon-client"\nversion="0.1.0"\nedition="2024"\n[dependencies]\nlog="0.4"\n')
         (original/'crates/horizon-client/src/lib.rs').write_text('pub mod game;\n')
         (original/'crates/horizon-client/src/game.rs').write_text('''
 pub struct Game<'a> { pub positions: &'a mut Vec<[i32;3]> }
@@ -60,7 +60,7 @@ impl Game<'_> {
         base = ['--workspace', str(original), '--mods', str(root/'mixins')]
         report = json.loads(run([str(cli), 'check', *base, '--out', str(stage), '--trust-native-mods']).stdout)
         assert report['injections'] == 1 and report['modules'] == 1
-        assert '2 passed' in report['cargo_stdout']
+        assert 'test result: ok.' in report['cargo_stdout']
         first = snapshot(stage)
         second = json.loads(run([str(cli), 'check', *base, '--out', str(stage), '--trust-native-mods']).stdout)
         assert not second['stage_changed'] and snapshot(stage) == first
