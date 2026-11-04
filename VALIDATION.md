@@ -30,3 +30,10 @@ fast fixture. No playable alpha or registry-ready release is claimed.
 - rebuild.bat --check succeeds with the actual launcher and a repository path containing spaces; it starts no build.
 - A missing-launcher check returns exit code 2 and prints recovery instructions.
 - Local .wyrd-launcher.txt is ignored by Git. No game build or playtest was started for this shortcut change.
+
+## Windows Rust editor setup — 2026-11-04
+
+- Installed the official Rust 1.95.0 GNU developer toolchain for the user, including rust-src, rustfmt and clippy; Horizon keeps its separate managed compiler.
+- Cargo metadata successfully loads the Wyrd workspace on Windows.
+- cargo check, formatting, clippy with warnings denied, and workspace tests all passed on Windows.
+- Existing VS Code processes need a full restart to receive the user PATH update. The editor UI was not restarted automatically.

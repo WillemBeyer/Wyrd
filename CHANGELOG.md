@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Include Rust standard-library sources in the developer toolchain and document VS Code setup.
+
 - Add a Windows rebuild shortcut targeting Wyrd Dev with the faster dev profile.
 
 - Bootstrap Wyrd from Horizon's official native source-mixin template.

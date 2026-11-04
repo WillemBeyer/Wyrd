@@ -13,6 +13,29 @@ installer. `rust-toolchain.toml` selects Rust 1.95.0, rustfmt and clippy. Do not
 commit a Rust toolchain or downloaded dependencies. GitHub Actions provides the
 Linux environment for the formatting, lint, runtime and compiled-fixture checks.
 
+## VS Code on Windows
+
+The Horizon launcher keeps a private compiler for game builds. VS Code's Rust
+Analyzer needs a separate developer Rust installation; installing the extension
+alone does not install Cargo or rustc.
+
+Install Rust from https://rustup.rs/ for your user account. On this Windows
+machine the GNU host was selected to avoid requiring Visual Studio Build Tools:
+`x86_64-pc-windows-gnu`. The project's `rust-toolchain.toml` requests Rust 1.95.0,
+rustfmt, clippy and rust-src (the standard library source for editor completion).
+Keep this separate from the launcher's managed toolchain.
+
+After installing Rust, fully exit all VS Code windows and reopen the Wyrd folder
+so Rust Analyzer and new terminals receive the updated user PATH. From a new
+terminal, `cargo --version` and `cargo metadata --format-version 1 --no-deps`
+should work. If Rust Analyzer still needs refreshing, use its Restart server
+command. A `cargo ... program not found` error indicates missing tools/PATH,
+not a problem in the Wyrd Rust source.
+
+Standalone Cargo checks work on Windows with this toolchain. The inherited
+Python staging tools still require Linux/WSL; installing Rust does not add fcntl
+to Windows Python.
+
 ## Fetch tools and dependencies
 
 From the repository in Ubuntu/WSL:
