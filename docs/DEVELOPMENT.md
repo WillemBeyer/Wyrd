@@ -76,6 +76,24 @@ dedicated Wyrd development instance. This setup does not run that command or
 touch your worlds. The launcher uses its own managed Rust toolchain. Check the
 built game's logs for `[wyrd] Breaking block at ...`. Do not test with valued saves.
 
+## Rebuild after editing on Windows
+
+Close the running Wyrd game, then double-click `rebuild.bat` in the repository
+root. It builds the local `mixins/wyrd` folder into instance `wyrd-dev` (Wyrd Dev)
+with `--profile dev`. It keeps the output visible and reports build failures.
+After success, select Wyrd Dev in the launcher and press Play. The script does
+not start the game, update Horizon, or change the global build profile.
+
+The launcher is resolved from `HORIZON_LAUNCHER`, the first line of the ignored
+`.wyrd-launcher.txt`, an executable alongside the batch file, or PATH, in that
+order. If nothing is found, it asks for the full exe path without quotes.
+This machine's local setting is already prepared. Other contributors should set
+their own launcher path. `HORIZON_INSTANCE` optionally overrides the instance ID.
+
+Run `rebuild.bat --check` in a command prompt to validate paths and print the
+build command without compiling. Running the normal shortcut explicitly trusts
+the repository's native mod code with the same access as the game.
+
 ## Significant changes
 
 Use a focused commit for each meaningful milestone. Run relevant checks, update

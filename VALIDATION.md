@@ -22,3 +22,11 @@ fast fixture. No playable alpha or registry-ready release is claimed.
 - Ubuntu GitHub Actions: Rust formatting, clippy with warnings denied, standalone unit tests, the compiled bundle fixture/AST audit, packaging tests and source artifact upload all passed for setup commit `178363fb02d129d07c9f9ac0168141cffe8326af`.
 - Evidence: https://github.com/WillemBeyer/Wyrd/actions/runs/41907932719 (successful run).
 - Full pinned-game build and interactive playtest: not performed. No game compatibility or playable magic features are claimed.
+
+## Windows rebuild shortcut — 2026-11-04
+
+- Verified against installed Horizon Launcher 0.2.41 help: native-build supports --instance and --profile dev.
+- Confirmed Wyrd Dev exists as instance ID wyrd-dev.
+- rebuild.bat --check succeeds with the actual launcher and a repository path containing spaces; it starts no build.
+- A missing-launcher check returns exit code 2 and prints recovery instructions.
+- Local .wyrd-launcher.txt is ignored by Git. No game build or playtest was started for this shortcut change.
