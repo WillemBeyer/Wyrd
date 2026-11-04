@@ -76,3 +76,13 @@ fast fixture. No playable alpha or registry-ready release is claimed.
 This verifies native loading, registration, diagnostics and a break-attempt hook;
 it does not implement or validate item memory, magic, or compatibility with a
 different Horizon source revision.
+
+## Windows normal-startup stack-overflow workaround — 2026-11-04
+
+- User reported Windows status 0xc00000fd / main stack overflow when the pinned dev-profile game started normally, before Wyrd registration. The earlier world-direct smoke test missed that path.
+- Rebuilt the same unchanged mod source with Horizon's supported incremental performance profile. Compiler output completed in 1m 41s; full launcher build/install completed in 251 s.
+- Installed and selected version: native-ba6344a-dd53697291ee, profile performance.
+- Tested the compiled executable without --world: normal title screen reached, Mods showed Wyrd 0.1.0: ON, and clean exit succeeded.
+- Repeated the test through the launcher using the installed performance instance without --world: title screen, Mods entry and exit code 0 all passed. No stack overflow occurred.
+- rebuild.bat now uses --profile performance. Both batch-file --check paths passed. No Wyrd gameplay logic or world files changed for this fix.
+- This is a verified profile workaround for the pinned engine; it does not identify the exact upstream stack frame or establish dev-profile safety.
