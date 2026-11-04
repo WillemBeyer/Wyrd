@@ -32,7 +32,7 @@ pub fn block_break_message(pos: [i32; 3]) -> String {
 }
 
 pub fn before_break(pos: [i32; 3]) {
-    log::info!("{}", block_break_message(pos));
+    log::info!(target: "horizon::wyrd", "{}", block_break_message(pos));
 }
 
 #[cfg(test)]

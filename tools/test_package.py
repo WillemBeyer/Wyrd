@@ -38,6 +38,7 @@ class PackageTests(unittest.TestCase):
             self.assertEqual(set(archive.namelist()), {
                 'horizon-native.json', 'mixins/wyrd/horizon-mixin.toml',
                 'mixins/wyrd/break.rs', 'mixins/wyrd/runtime.rs',
+                'mixins/wyrd/list.rs', 'mixins/wyrd/command.rs',
             })
             manifest = json.loads(archive.read('horizon-native.json'))
             self.assertEqual(manifest['id'], 'wyrd')

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Register Wyrd in Options > Mods, add startup and /wyrd diagnostics, and provide a direct development-instance launch shortcut.
+
 - Send block-break test messages through Horizon's INFO logger instead of raw stderr.
 
 - Include Rust standard-library sources in the developer toolchain and document VS Code setup.

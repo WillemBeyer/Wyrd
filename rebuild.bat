@@ -38,8 +38,8 @@ echo.
 set "RESULT=%ERRORLEVEL%"
 if not "%RESULT%"=="0" goto build_failed
 echo.
-echo Build succeeded. Select Wyrd Dev in Horizon Launcher and press Play.
-echo If you overrode the instance, select that instance instead.
+echo Build succeeded. Run play-wyrd.bat to launch the freshly built instance.
+echo An already-open launcher window may still have the old version selected.
 pause
 exit /b 0
 

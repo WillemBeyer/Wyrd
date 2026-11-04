@@ -5,7 +5,7 @@ Discover item memories, experiment with alchemy, and awaken unique abilities
 through exploration.
 
 **Status: development scaffold, not a playable magic release.** The initial bundle
-only logs block-break attempts. It does not award resonance, change drops, or
+registers a native Mods entry, provides `/wyrd` diagnostics, and logs block-break attempts. It does not award resonance, change drops, or
 implement the abilities described below. A HEAD hook observes attempts, including
 attempts the game may later reject; it must not become a progression trigger.
 

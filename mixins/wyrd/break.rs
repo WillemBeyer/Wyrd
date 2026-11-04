@@ -22,6 +22,8 @@
 // SOFTWARE.
 
 // Runs before the native method. Returning unit leaves its body/result intact.
-fn before_break(pos: [i32; 3]) {
-    crate::game::wyrd::before_break(pos);
+fn before_break(game: &crate::game::Game<'_>, pos: [i32; 3]) {
+    if game.native_on("wyrd") {
+        crate::game::wyrd::before_break(pos);
+    }
 }

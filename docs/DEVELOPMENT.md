@@ -104,7 +104,7 @@ built game's logs for `[wyrd] Breaking block at ...`. Do not test with valued sa
 Close the running Wyrd game, then double-click `rebuild.bat` in the repository
 root. It builds the local `mixins/wyrd` folder into instance `wyrd-dev` (Wyrd Dev)
 with `--profile dev`. It keeps the output visible and reports build failures.
-After success, select Wyrd Dev in the launcher and press Play. The script does
+After success, run `play-wyrd.bat` to launch the instance from its saved build selection. An already-open launcher window may retain an older selection. The script does
 not start the game, update Horizon, or change the global build profile.
 
 The launcher is resolved from `HORIZON_LAUNCHER`, the first line of the ignored
@@ -116,6 +116,26 @@ their own launcher path. `HORIZON_INSTANCE` optionally overrides the instance ID
 Run `rebuild.bat --check` in a command prompt to validate paths and print the
 build command without compiling. Running the normal shortcut explicitly trusts
 the repository's native mod code with the same access as the game.
+
+## Verify the loaded mod
+
+Run `play-wyrd.bat` after rebuilding. This uses `horizon-launcher play --instance
+wyrd-dev`, which reads the instance selection on disk instead of relying on the
+state of a launcher window opened before the build. `play-wyrd.bat --check`
+prints the command without launching. Launcher path and instance overrides work
+as with `rebuild.bat`.
+
+Wyrd should appear as **Wyrd 0.1.0** in Options > Mods. Native source bundles do
+not automatically get a menu row: Wyrd registers one through `native_mods`.
+At startup, `latest.log` should contain `[wyrd] Native scaffold loaded (0.1.0)`.
+In a world, `/wyrd` or `/wyrd status` gives a local chat message and an INFO log
+line confirming loaded/enabled status. This command changes no world state.
+Block-break logging respects the Mods switch. The test is still a hook on a
+break attempt, not a confirmed progression event.
+
+The native version's build metadata, executable hash, and startup marker are
+better identity checks than its Nightly banner, which may use the base release's
+label. Do not treat a successful build alone as proof that a running session used it.
 
 ## Significant changes
 
