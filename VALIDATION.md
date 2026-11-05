@@ -123,3 +123,21 @@ different Horizon source revision.
 - Repeated the test through the launcher using the installed performance instance without --world: title screen, Mods entry and exit code 0 all passed. No stack overflow occurred.
 - rebuild.bat now uses --profile performance. Both batch-file --check paths passed. No Wyrd gameplay logic or world files changed for this fix.
 - This is a verified profile workaround for the pinned engine; it does not identify the exact upstream stack frame or establish dev-profile safety.
+
+## Library/binary crate boundary fix - 2026-11-05
+
+- The Deep Delver commit applied cleanly but the full launcher build failed on
+  `crates/horizon-client/src/lan/guest.rs`: `use crate::game::wyrd::is_eligible_pickaxe`
+  could not find `game` at the crate root. At pinned Horizon `ba6344a`, `game.rs`
+  belongs to the binary crate (`main.rs` declares `mod game;`), while `lan/guest.rs`
+  belongs to the `horizon_client` library crate. The tiny fixture declares `game`
+  in its library root, so it could not catch this boundary.
+- The sync helper now mirrors the eligible-pickaxe tier check locally instead of
+  importing `crate::game::wyrd`. The runtime keeps the shared helper for the
+  binary-side hooks and its unit tests.
+- `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets --locked
+  --offline -- -D warnings`, `cargo test --workspace --locked --offline` (5 tests)
+  and the compiled fixture integration test all passed on Windows.
+- Full launcher build against pinned Horizon succeeded:
+  `native-build ... --profile performance --trust-native-code`, built in 2 min 29 s
+  and selected `native-ba6344a-f4d91edb207a`. The game was not launched for this fix.
