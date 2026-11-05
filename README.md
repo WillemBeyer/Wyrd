@@ -16,10 +16,10 @@ Memories are saved on the individual pickaxe. Hover over it to see the effects.
 A brief message above the hotbar announces each unlock.
 
 In a singleplayer survival world, hold an iron pickaxe, aim at the side of
-common stone at head height, and run `/wyrd tunnel`. This prototype digs a
-1×2 tunnel up to three blocks deep using normal durability. It stops at ore
-and other obstructions. The tooltip shows the 30-second cooldown. Any iron
-pickaxe can use the prototype ability.
+common stone at head height, and run `/wyrd tunnel`. This prototype mines
+matching stone in a 3×3 area up to six blocks deep using normal durability.
+It stops before a slice containing ore or another obstruction. The tooltip
+shows the 30-second cooldown. Any iron pickaxe can use the prototype ability.
 
 The Mods entry, `/wyrd` diagnostic, and block-break log are available for testing.
 

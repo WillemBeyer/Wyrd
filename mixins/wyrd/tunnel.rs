@@ -23,7 +23,7 @@
 
 fn tunnel_command(game: &mut crate::game::Game<'_>, command: &str, ran: &mut bool) {
     use crate::game::wyrd::{
-        TUNNEL_COOLDOWN_GROUP, TUNNEL_COOLDOWN_TICKS, tunnel_cooldown_seconds,
+        TUNNEL_COOLDOWN_GROUP, TUNNEL_COOLDOWN_TICKS, ore_resource, tunnel_cooldown_seconds,
     };
     use horizon_client::text::Text;
     use std::sync::Arc;
@@ -67,23 +67,38 @@ fn tunnel_command(game: &mut crate::game::Game<'_>, command: &str, ran: &mut boo
         return;
     }
 
+    // Break matching stone in a 3x3x6 box. Inspect a whole slice before
+    // removing anything so neither ores nor other obstructions are bypassed.
+    let target_state = game.world.block(hit.pos[0], hit.pos[1], hit.pos[2]);
+    let target = game.res.facts().get(target_state).name.clone();
+    let forward = [-hit.face[0], -hit.face[2]];
+    let lateral = if hit.face[0] != 0 { [0, 1] } else { [1, 0] };
+
     let mut broken = 0;
-    'tunnel: for depth in 0..3 {
-        let x = hit.pos[0] - depth * hit.face[0];
-        let z = hit.pos[2] - depth * hit.face[2];
-        if !game.border.contains(f64::from(x) + 0.5, f64::from(z) + 0.5) {
-            break;
-        }
-        let positions = [[x, hit.pos[1], z], [x, hit.pos[1] - 1, z]];
-        let states = positions.map(|[x, y, z]| game.world.block(x, y, z));
-        let facts = game.res.facts();
-        let air = states.map(|state| facts.is_air(state));
-        // Inspect both blocks first so an ore vein or obstruction leaves the
-        // whole slice intact. Empty slices also end the tunnel.
-        if air == [true, true]
-            || states.iter().zip(air).any(|(&state, air)| {
-                !air && !matches!(
-                    facts.get(state).name.as_ref(),
+    let mut stopped_at_ore = false;
+    'tunnel: for step in 0..6 {
+        let mut matching = Vec::with_capacity(9);
+        let mut obstructed = false;
+        for side in -1..=1 {
+            for up in -1..=1 {
+                let x = hit.pos[0] + forward[0] * step + lateral[0] * side;
+                let y = hit.pos[1] + up;
+                let z = hit.pos[2] + forward[1] * step + lateral[1] * side;
+                if !game.border.contains(f64::from(x) + 0.5, f64::from(z) + 0.5) {
+                    obstructed = true;
+                    continue;
+                }
+                let state = game.world.block(x, y, z);
+                let facts = game.res.facts();
+                if facts.is_air(state) {
+                    continue;
+                }
+                let block = facts.get(state);
+                let name = block.name.as_ref();
+                if ore_resource(name).is_some() || name == "minecraft:ancient_debris" {
+                    stopped_at_ore = true;
+                } else if !matches!(
+                    name,
                     "minecraft:stone"
                         | "minecraft:deepslate"
                         | "minecraft:granite"
@@ -96,21 +111,22 @@ fn tunnel_command(game: &mut crate::game::Game<'_>, command: &str, ran: &mut boo
                         | "minecraft:basalt"
                         | "minecraft:smooth_basalt"
                         | "minecraft:end_stone"
-                )
-            })
-        {
+                ) {
+                    obstructed = true;
+                } else if block.name == target {
+                    matching.push(([x, y, z], state));
+                }
+            }
+        }
+        if obstructed || stopped_at_ore || matching.is_empty() {
             break;
         }
-        for ([x, y, z], air) in positions.into_iter().zip(air) {
-            if air {
-                continue;
-            }
-            if !has_pickaxe(game) {
+        for ([x, y, z], state) in matching {
+            if !has_pickaxe(game) || game.world.block(x, y, z) != state {
                 break 'tunnel;
             }
-            let before = game.world.block(x, y, z);
             let result = game.break_block([x, y, z]);
-            if game.world.block(x, y, z) == before {
+            if game.world.block(x, y, z) == state {
                 break 'tunnel;
             }
             broken += 1;
@@ -120,7 +136,12 @@ fn tunnel_command(game: &mut crate::game::Game<'_>, command: &str, ran: &mut boo
         }
     }
     if broken == 0 {
-        game.system_message(Text::literal("Tunnel Break stopped. Aim at common stone."));
+        let message = if stopped_at_ore {
+            "Tunnel Break stopped at ore."
+        } else {
+            "Tunnel Break stopped. Aim at common stone."
+        };
+        game.system_message(Text::literal(message));
         return;
     }
 
@@ -128,7 +149,10 @@ fn tunnel_command(game: &mut crate::game::Game<'_>, command: &str, ran: &mut boo
     game.cooldowns
         .add(Arc::clone(&group), TUNNEL_COOLDOWN_TICKS);
     game.guest_cooldowns.push((group, TUNNEL_COOLDOWN_TICKS));
-    game.system_message(Text::literal(&format!(
-        "Tunnel Break mined {broken} blocks."
-    )));
+    let message = if stopped_at_ore {
+        format!("Tunnel Break mined {broken} blocks and stopped at ore.")
+    } else {
+        format!("Tunnel Break mined {broken} blocks.")
+    };
+    game.system_message(Text::literal(&message));
 }
