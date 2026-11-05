@@ -21,38 +21,47 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// This loot path runs only after a successful survival harvest. Its held snapshot
-// predates any memory earned on the current break.
-fn add_iron_memory_drop(
+// The held snapshot predates the memory awarded on the current break.
+// The original loot vector already contains vanilla's Fortune results.
+fn add_ore_memory_drop(
+    mut drops: Vec<ItemStack>,
     game: &mut crate::game::Game<'_>,
-    state: crate::game::BlockStateId,
-    held: Option<&crate::game::ItemStack>,
-    pos: [i32; 3],
-) {
-    use crate::game::wyrd::{IRON_BONUS_CHANCE, IRON_MEMORY_KEY, is_iron_ore};
+    state: BlockStateId,
+    held: &Option<ItemStack>,
+) -> Vec<ItemStack> {
+    use crate::game::wyrd::{ORE_BONUS_CHANCE, ORE_MEMORY_KEY, ore_resource};
     use horizon_world::nbt::{JavaString, Tag};
 
     let Some(stack) = held else {
-        return;
+        return drops;
     };
     if !game.native_on("wyrd")
         || !game.ui.rules.bool("block_drops")
         || stack.item.as_ref() != "minecraft:iron_pickaxe"
         || stack.enchantment_level("minecraft:silk_touch") > 0
-        || !is_iron_ore(game.res.facts().get(state).name.as_ref())
     {
-        return;
+        return drops;
     }
 
+    let Some(resource) = ore_resource(game.res.facts().get(state).name.as_ref()) else {
+        return drops;
+    };
+    if !drops
+        .iter()
+        .any(|drop| drop.item.as_ref() == resource && drop.count > 0)
+    {
+        return drops;
+    }
     let Some(Tag::Compound(data)) = stack
         .data()
         .and_then(|data| data.other("minecraft:custom_data"))
     else {
-        return;
+        return drops;
     };
-    if data.get(&JavaString::from(IRON_MEMORY_KEY)) == Some(&Tag::Byte(1))
-        && game.world.random.next_float() < IRON_BONUS_CHANCE
+    if data.get(&JavaString::from(ORE_MEMORY_KEY)) == Some(&Tag::Byte(1))
+        && game.world.random.next_float() < ORE_BONUS_CHANCE
     {
-        game.pop_resource(pos, crate::game::ItemStack::new("minecraft:raw_iron", 1));
+        drops.push(ItemStack::new(resource, 1));
     }
+    drops
 }

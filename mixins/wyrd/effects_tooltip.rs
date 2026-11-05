@@ -26,7 +26,10 @@ fn show_memory_effects(
     game: &crate::game::Game<'_>,
     stack: &crate::game::ItemStack,
 ) -> Vec<(horizon_client::text::Text, u32)> {
-    use crate::game::wyrd::{DEEPSLATE_EFFECT, DEEPSLATE_MEMORY_KEY, IRON_EFFECT, IRON_MEMORY_KEY};
+    use crate::game::wyrd::{
+        DEEPSLATE_EFFECT, DEEPSLATE_MEMORY_KEY, ORE_EFFECT, ORE_MEMORY_KEY, TUNNEL_COOLDOWN_GROUP,
+        tunnel_cooldown_seconds,
+    };
     use horizon_client::text::Text;
     use horizon_world::nbt::{JavaString, Tag};
 
@@ -36,19 +39,27 @@ fn show_memory_effects(
     {
         return lines;
     }
-    let Some(Tag::Compound(data)) = stack
+    if let Some(Tag::Compound(data)) = stack
         .data()
         .and_then(|data| data.other("minecraft:custom_data"))
-    else {
-        return lines;
-    };
-    for (key, effect) in [
-        (DEEPSLATE_MEMORY_KEY, DEEPSLATE_EFFECT),
-        (IRON_MEMORY_KEY, IRON_EFFECT),
-    ] {
-        if data.get(&JavaString::from(key)) == Some(&Tag::Byte(1)) {
-            lines.push((Text::literal(&format!("Effect: {effect}")), u32::MAX));
+    {
+        for (key, effect) in [
+            (DEEPSLATE_MEMORY_KEY, DEEPSLATE_EFFECT),
+            (ORE_MEMORY_KEY, ORE_EFFECT),
+        ] {
+            if data.get(&JavaString::from(key)) == Some(&Tag::Byte(1)) {
+                lines.push((Text::literal(&format!("Effect: {effect}")), u32::MAX));
+            }
         }
+    }
+    if game.has_singleplayer_server() {
+        let remaining = tunnel_cooldown_seconds(game.cooldowns.percent(TUNNEL_COOLDOWN_GROUP, 0.0));
+        let status = if remaining == 0 {
+            "Tunnel Break: Ready (/wyrd tunnel)".to_owned()
+        } else {
+            format!("Tunnel Break: {remaining}s cooldown")
+        };
+        lines.push((Text::literal(&status), u32::MAX));
     }
     lines
 }

@@ -24,7 +24,7 @@
 // The pinned game's sole caller reaches this after a successful non-creative break.
 fn remember_mined_block(game: &mut crate::game::Game<'_>, block: &str) {
     use crate::game::wyrd::{
-        self, DEEPSLATE_EFFECT, DEEPSLATE_MEMORY_KEY, IRON_EFFECT, IRON_MEMORY_KEY,
+        self, DEEPSLATE_EFFECT, DEEPSLATE_MEMORY_KEY, ORE_EFFECT, ORE_MEMORY_KEY,
     };
     use horizon_world::nbt::Tag;
 
@@ -33,9 +33,13 @@ fn remember_mined_block(game: &mut crate::game::Game<'_>, block: &str) {
     }
     let (memory_key, memory_name, effect) = match block {
         "minecraft:deepslate" => (DEEPSLATE_MEMORY_KEY, "Deepslate Memory", DEEPSLATE_EFFECT),
-        ore if wyrd::is_iron_ore(ore) => (IRON_MEMORY_KEY, "Iron Memory", IRON_EFFECT),
+        ore if wyrd::ore_resource(ore).is_some() => (ORE_MEMORY_KEY, "Ore Memory", ORE_EFFECT),
         _ => return,
     };
+    // Require the normal harvesting tool before awarding an ore memory.
+    if memory_key == ORE_MEMORY_KEY && !game.res.items().correct_for_drops(game.held(), block) {
+        return;
+    }
     // Match the selected inventory slot used by Horizon's tool-wear method.
     let Some(stack) = game.inventory[game.selected].as_mut() else {
         return;

@@ -85,15 +85,18 @@ bindings = [
 ]
 
 [[injection]]
-id = "iron-memory-drop"
-kind = "HEAD"
-target = "horizon_client::game::Game<'_>::block_loot_at"
-helper = "iron_bonus.rs"
+id = "ore-memory-drop"
+kind = "MODIFY_VARIABLE"
+target = "horizon_client::game::Game<'_>::break_block_as_player"
+variable = { name = "drops", ordinal = 0, at = "STORE" }
+require = 1
+ordinal = 0
+helper = "ore_bonus.rs"
 bindings = [
+  { name = "drops", ty = "Vec<ItemStack>", value = "$value" },
   { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
-  { name = "state", ty = "crate::game::BlockStateId", value = "state" },
-  { name = "held", ty = "Option<&crate::game::ItemStack>", value = "held" },
-  { name = "pos", ty = "[i32;3]", value = "pos" },
+  { name = "state", ty = "BlockStateId", value = "$local:state:1" },
+  { name = "held", ty = "&Option<ItemStack>", value = "$local_ref:held:0" },
 ]
 
 [[injection]]
@@ -118,4 +121,15 @@ helper = "sync_memory.rs"
 bindings = [
   { name = "network", ty = "Option<Stack>", value = "$value" },
   { name = "local", ty = "&Option<ItemStack>", value = "s" },
+]
+
+[[injection]]
+id = "tunnel-command"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_command"
+helper = "tunnel.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "command", ty = "&str", value = "command" },
+  { name = "ran", ty = "&mut bool", value = "&mut *ran" },
 ]

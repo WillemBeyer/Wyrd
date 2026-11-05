@@ -8,11 +8,18 @@ through exploration.
 both of these memories:
 
 - **Deepslate Memory** makes it mine deepslate 15% faster.
-- **Iron Memory** unlocks by mining either iron ore variant. On later breaks of
-  either variant, it gives a 20% chance for one extra raw iron without Silk Touch.
+- **Ore Memory** unlocks on the first successful harvest of a supported ore.
+  Later ore breaks give a 10% chance of one extra normal resource drop after
+  Fortune. Silk Touch skips the bonus.
 
 Memories are saved on the individual pickaxe. Hover over it to see the effects.
 A brief message above the hotbar announces each unlock.
+
+In a singleplayer survival world, hold an iron pickaxe, aim at the side of
+common stone at head height, and run `/wyrd tunnel`. This prototype digs a
+1×2 tunnel up to three blocks deep using normal durability. It stops at ore
+and other obstructions. The tooltip shows the 30-second cooldown. Any iron
+pickaxe can use the prototype ability.
 
 The Mods entry, `/wyrd` diagnostic, and block-break log are available for testing.
 
@@ -63,6 +70,8 @@ permissions. Build and play it only in a dedicated development instance/world.
 mixins/wyrd/horizon-mixin.toml  Native manifest and the exact source target
 mixins/wyrd/break.rs            Block-break diagnostic
 mixins/wyrd/memory.rs           Confirmed survival mining and pickaxe memory
+mixins/wyrd/ore_bonus.rs        Bonus resources after vanilla ore drops
+mixins/wyrd/tunnel.rs           Server-authoritative tunnel prototype
 mixins/wyrd/runtime.rs          Shared testable Rust library and injected module
 compatibility.json             Pinned upstream versions and source hash
 tools/horizon.py               Export, plan/apply, check and build (Linux)

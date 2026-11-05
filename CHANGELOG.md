@@ -4,7 +4,8 @@
 
 - Preserve pickaxe memories during inventory sync so the tooltip can show their effects in singleplayer and LAN.
 
-- Let iron pickaxes learn Iron Memory for a 20% chance of one extra raw iron on later iron ore breaks without Silk Touch.
+- Give iron pickaxes Ore Memory for a 10% chance of one extra resource on later ore breaks without Silk Touch.
+- Add the singleplayer Tunnel Break prototype with normal tool wear and a 30-second cooldown.
 - Show the effects of unlocked memories in the pickaxe tooltip.
 
 - Give remembered iron pickaxes 15% faster deepslate mining and announce first unlocks above the hotbar.

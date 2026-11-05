@@ -40,7 +40,7 @@ class PackageTests(unittest.TestCase):
                 'mixins/wyrd/break.rs', 'mixins/wyrd/runtime.rs',
                 'mixins/wyrd/list.rs', 'mixins/wyrd/command.rs',
                 'mixins/wyrd/memory.rs', 'mixins/wyrd/mining_bonus.rs',
-                'mixins/wyrd/iron_bonus.rs', 'mixins/wyrd/effects_tooltip.rs',
+                'mixins/wyrd/ore_bonus.rs', 'mixins/wyrd/effects_tooltip.rs', 'mixins/wyrd/tunnel.rs',
                 'mixins/wyrd/sync_memory.rs',
             })
             manifest = json.loads(archive.read('horizon-native.json'))

@@ -47,7 +47,21 @@ impl VisitMut for ValueAudit<'_> {
                         assert!(original.replace(arg.clone()).is_none());
                         arg.clone()
                     }
-                    value => syn::parse_str(value).unwrap(),
+                    value => {
+                        let local = |prefix| {
+                            value
+                                .strip_prefix(prefix)
+                                .and_then(|binding| binding.split_once(':'))
+                        };
+                        if let Some((name, _)) = local("$local_ref:") {
+                            let name: syn::Ident = syn::parse_str(name).unwrap();
+                            syn::parse_quote!(&#name)
+                        } else if let Some((name, _)) = local("$local:") {
+                            syn::parse_str(name).unwrap()
+                        } else {
+                            syn::parse_str(value).unwrap()
+                        }
+                    }
                 })
                 .collect();
             let expected: Expr = syn::parse2(quote!(({#helper #name})(#(#args),*))).unwrap();

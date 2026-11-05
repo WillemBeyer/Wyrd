@@ -151,6 +151,9 @@ struct Resources;
 struct Facts { name: Arc<str> }
 impl Resources {
     fn facts(&self) -> &Self { self }
+    fn items(&self) -> &Self { self }
+    fn correct_for_drops(&self, _: Option<&ItemStack>, _: &str) -> bool { true }
+    fn is_air(&self, _: BlockStateId) -> bool { false }
     fn get(&self, _: u32) -> Facts { Facts { name: "minecraft:deepslate".into() } }
 }
 #[derive(Default)]
@@ -159,7 +162,7 @@ impl Titles {
     fn set_overlay(&mut self, _: crate::text::Text, _: bool) {}
 }
 use std::{collections::BTreeMap, sync::Arc};
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub(crate) struct Data(BTreeMap<String, Tag>);
 impl Data {
     pub(crate) fn other(&self, key: &str) -> Option<&Tag> { self.0.get(key) }
@@ -169,10 +172,11 @@ impl Data {
 }
 type BlockStateId = u32;
 type ItemStack = Stack;
-pub(crate) struct Stack { pub(crate) item: Arc<str>, data: Data }
+#[derive(Clone)]
+pub(crate) struct Stack { pub(crate) item: Arc<str>, count: u32, data: Data }
 impl Stack {
-    fn new(item: &str, _: u32) -> Self {
-        Self { item: item.into(), data: Data::default() }
+    fn new(item: &str, count: u32) -> Self {
+        Self { item: item.into(), count, data: Data::default() }
     }
     fn enchantment_level(&self, _: &str) -> u32 { 0 }
     fn data_mut(&mut self) -> &mut Data { &mut self.data }
@@ -185,16 +189,47 @@ impl Rules {
 }
 #[derive(Default)]
 struct Ui { rules: Rules }
+#[derive(Default)]
+struct Cooldowns;
+impl Cooldowns {
+    fn percent(&self, _: &str, _: f32) -> f32 { 0.0 }
+    fn add(&mut self, _: Arc<str>, _: i32) {}
+}
+#[derive(Default)]
+struct Border;
+impl Border {
+    fn contains(&self, _: f64, _: f64) -> bool { true }
+}
+struct Hub { singleplayer_owner: Option<u128> }
+struct Lan { hub: Hub }
+struct Hit { pos: [i32; 3], face: [i32; 3] }
 pub struct Game<'a> {
     pub positions: &'a mut Vec<[i32;3]>, pub messages: &'a mut Vec<String>,
     inventory: [Option<Stack>; 2], selected: usize, wear_calls: usize,
+    remote: Option<()>, lan: Option<Lan>, lan_acting_uuid: Option<u128>,
+    cooldowns: Cooldowns, guest_cooldowns: Vec<(Arc<str>, i32)>, border: Border,
     ui: Ui, world: World, res: Resources, titles: Titles, lan_acting: Option<u32>,
     guest_packets: Vec<crate::packets::play::Clientbound>,
 }
 impl Game<'_> {
     fn held(&self) -> Option<&Stack> { self.inventory[self.selected].as_ref() }
-    pub fn break_block(&mut self,pos:[i32;3])->i32 {self.positions.push(pos); 7}
-    fn pop_resource(&mut self, _: [i32; 3], _: ItemStack) {}
+    pub fn break_block(&mut self, pos: [i32; 3]) -> Result<i32, ()> {
+        self.positions.push(pos);
+        Ok(7)
+    }
+    fn break_block_as_player(&mut self, pos: [i32; 3]) {
+        let state = self.world.block(pos[0], pos[1], pos[2]);
+        let state = state;
+        let held = self.held().cloned();
+        let drops = self.block_loot_at(pos, state, held.as_ref());
+        let _ = drops;
+    }
+    fn mode_id(&self) -> i32 { 0 }
+    fn has_singleplayer_server(&self) -> bool { true }
+    fn aim(&self) -> Option<([f64; 3], [f64; 3])> { None }
+    fn clip_ray(&self, _: [f64; 3], _: [f64; 3], _: f64) -> Option<Hit> { None }
+    fn reach(&self) -> f64 { 4.5 }
+    fn system_message(&mut self, text: crate::text::Text) { self.messages.push(text.0); }
     fn block_loot_at(
         &mut self, pos: [i32; 3], state: BlockStateId, held: Option<&ItemStack>,
     ) -> Vec<ItemStack> {
@@ -211,7 +246,7 @@ impl Game<'_> {
     let mut messages = Vec::new();
     let pickaxe = || Some(Stack::new("minecraft:iron_pickaxe", 1));
     let mut game = Game { positions: &mut positions, messages: &mut messages,
-        inventory: [pickaxe(), pickaxe()], selected: 1, wear_calls: 0, ui: Ui::default(), world: World::default(), res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new() };
+        inventory: [pickaxe(), pickaxe()], selected: 1, wear_calls: 0, ui: Ui::default(), world: World::default(), res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new(), remote: None, lan: None, lan_acting_uuid: None, cooldowns: Cooldowns, guest_cooldowns: Vec::new(), border: Border };
     let unrelated = Tag::Byte(9);
     let original_lore = Tag::String("Existing line".into());
     let data = game.inventory[1].as_mut().unwrap().data_mut();
@@ -236,15 +271,15 @@ impl Game<'_> {
 #[test] fn original_body_and_result_are_preserved() {
     let mut positions=Vec::new();
     let mut messages=Vec::new();
-    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0, ui: Ui::default(), world: World::default(), res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new()};
-    assert_eq!(game.break_block([1,2,3]),7);
-    assert_eq!(game.break_block([-1,64,8]),7);
+    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0, ui: Ui::default(), world: World::default(), res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new(), remote: None, lan: None, lan_acting_uuid: None, cooldowns: Cooldowns, guest_cooldowns: Vec::new(), border: Border};
+    assert_eq!(game.break_block([1,2,3]),Ok(7));
+    assert_eq!(game.break_block([-1,64,8]),Ok(7));
     assert_eq!(positions,vec![[1,2,3],[-1,64,8]]);
 }
 #[test] fn mod_registration_and_diagnostic_are_reachable() {
     let mut positions=Vec::new();
     let mut messages=Vec::new();
-    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0, ui: Ui::default(), world: World::default(), res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new()};
+    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0, ui: Ui::default(), world: World::default(), res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new(), remote: None, lan: None, lan_acting_uuid: None, cooldowns: Cooldowns, guest_cooldowns: Vec::new(), border: Border};
     let mut mods=Vec::new();
     game.native_mods(&mut mods);
     assert_eq!(mods.iter().filter(|m| m.id=="wyrd").count(),1);
@@ -265,7 +300,7 @@ impl Game<'_> {
         before = snapshot(original)
         base = ['--workspace', str(original), '--mods', str(root/'mixins')]
         report = json.loads(run([str(cli), 'check', *base, '--out', str(stage), '--trust-native-mods']).stdout)
-        assert report['injections'] == 8 and report['modules'] == 1
+        assert report['injections'] == 9 and report['modules'] == 1
         assert 'test result: ok.' in report['cargo_stdout']
         first = snapshot(stage)
         second = json.loads(run([str(cli), 'check', *base, '--out', str(stage), '--trust-native-mods']).stdout)

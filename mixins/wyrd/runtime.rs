@@ -26,14 +26,34 @@
 
 pub const DEEPSLATE_MEMORY_KEY: &str = "wyrd:deepslate_memory";
 pub const DEEPSLATE_SPEED_MULTIPLIER: f32 = 1.15;
-pub const IRON_MEMORY_KEY: &str = "wyrd:iron_memory";
-pub const IRON_BONUS_CHANCE: f32 = 0.20;
+pub const ORE_MEMORY_KEY: &str = "wyrd:ore_memory";
+pub const ORE_BONUS_CHANCE: f32 = 0.10;
+pub const TUNNEL_COOLDOWN_GROUP: &str = "wyrd:tunnel_break";
+pub const TUNNEL_COOLDOWN_TICKS: i32 = 600;
 
 pub const DEEPSLATE_EFFECT: &str = "+15% mining speed on deepslate";
-pub const IRON_EFFECT: &str = "20% chance for +1 raw iron from iron ore (no Silk Touch)";
+pub const ORE_EFFECT: &str = "10% chance for +1 ore drop (no Silk Touch)";
 
-pub fn is_iron_ore(block: &str) -> bool {
-    matches!(block, "minecraft:iron_ore" | "minecraft:deepslate_iron_ore")
+pub fn ore_resource(block: &str) -> Option<&'static str> {
+    let ore = block.strip_prefix("minecraft:")?;
+    let ore = ore.strip_prefix("deepslate_").unwrap_or(ore);
+    Some(match ore {
+        "coal_ore" => "minecraft:coal",
+        "copper_ore" => "minecraft:raw_copper",
+        "iron_ore" => "minecraft:raw_iron",
+        "gold_ore" => "minecraft:raw_gold",
+        "redstone_ore" => "minecraft:redstone",
+        "lapis_ore" => "minecraft:lapis_lazuli",
+        "diamond_ore" => "minecraft:diamond",
+        "emerald_ore" => "minecraft:emerald",
+        "nether_gold_ore" => "minecraft:gold_nugget",
+        "nether_quartz_ore" => "minecraft:quartz",
+        _ => return None,
+    })
+}
+
+pub fn tunnel_cooldown_seconds(remaining: f32) -> u32 {
+    (remaining * (TUNNEL_COOLDOWN_TICKS / 20) as f32).ceil() as u32
 }
 
 pub fn block_break_message(pos: [i32; 3]) -> String {
