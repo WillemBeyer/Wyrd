@@ -4,17 +4,18 @@ A native Rust magic mod for Horizon where your adventures shape your gear.
 Discover item memories, experiment with alchemy, and awaken unique abilities
 through exploration.
 
-**Status: development scaffold, not a playable magic release.** The initial bundle
-registers a native Mods entry, provides `/wyrd` diagnostics, and logs block-break attempts. It does not award resonance, change drops, or
-implement the abilities described below. A HEAD hook observes attempts, including
-attempts the game may later reject; it must not become a progression trigger.
+**Status: first Item Memory prototype.** In survival, mine deepslate with an
+iron pickaxe to give that pickaxe **Deepslate Memory**. Hover over the item to
+read it. Wyrd writes the memory to the pickaxe's own saved item data.
 
-## First playable goal
+The Mods entry, `/wyrd` diagnostic, and block-break log are available for testing.
 
-The Ember Path: one sword develops Ember Memory through varied meaningful
-interactions, one essence helps bind it, and the player chooses Flame Burst or
-Cinder Guard. Start by proving an item's memory survives save/reload, dropping,
-picking up, and transferring it. See [the roadmap](docs/ROADMAP.md).
+## Next playable goals
+
+Once item memory is proven in play, try a small mining-speed bonus for deepslate.
+The Ember Path is the later full loop: a sword develops Ember Memory through
+Blaze encounters, an essence helps bind it, and the player chooses Flame Burst
+or Cinder Guard. See [the roadmap](docs/ROADMAP.md).
 
 ## Compatibility
 
@@ -55,7 +56,8 @@ permissions. Build and play it only in a dedicated development instance/world.
 
 ```text
 mixins/wyrd/horizon-mixin.toml  Native manifest and the exact source target
-mixins/wyrd/break.rs            Thin game hook adapter
+mixins/wyrd/break.rs            Block-break diagnostic
+mixins/wyrd/memory.rs           Confirmed survival mining and pickaxe memory
 mixins/wyrd/runtime.rs          Shared testable Rust library and injected module
 compatibility.json             Pinned upstream versions and source hash
 tools/horizon.py               Export, plan/apply, check and build (Linux)

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Give the exact iron pickaxe used to mine deepslate a persistent Deepslate Memory and tooltip line.
+
 - Use the incremental performance profile on Windows to avoid a title-screen startup stack overflow in the pinned dev build.
 
 - Register Wyrd in Options > Mods, add startup and /wyrd diagnostics, and provide a direct development-instance launch shortcut.

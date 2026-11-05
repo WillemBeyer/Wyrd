@@ -62,3 +62,13 @@ bindings = [
   { name = "command", ty = "&str", value = "command" },
   { name = "ran", ty = "&mut bool", value = "&mut *ran" },
 ]
+
+[[injection]]
+id = "remember-mined-deepslate"
+kind = "HEAD"
+target = "horizon_client::game::Game<'_>::mine_block_with_held"
+helper = "memory.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "block", ty = "&str", value = "name" },
+]

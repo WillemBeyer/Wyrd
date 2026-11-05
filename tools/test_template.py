@@ -39,7 +39,17 @@ def main():
         (original/'crates/horizon-client/src').mkdir(parents=True)
         (original/'Cargo.toml').write_text('[workspace]\nmembers=["crates/horizon-client"]\nresolver="2"\n')
         (original/'crates/horizon-client/Cargo.toml').write_text('[package]\nname="horizon-client"\nversion="0.1.0"\nedition="2024"\n[dependencies]\nlog="0.4"\n')
-        (original/'crates/horizon-client/src/lib.rs').write_text('pub mod game;\n')
+        (original/'crates/horizon-client/src/lib.rs').write_text('''
+extern crate self as horizon_world;
+pub mod game;
+pub mod nbt {
+    use std::collections::BTreeMap;
+    #[derive(Clone, Debug, PartialEq)]
+    pub enum Tag {
+        Byte(i8), String(String), List(Vec<Tag>), Compound(BTreeMap<String, Tag>),
+    }
+}
+''')
         (original/'crates/horizon-client/src/game').mkdir()
         (original/'crates/horizon-client/src/game/native_hooks.rs').write_text('''
 use super::Game;
@@ -58,14 +68,62 @@ impl Game<'_> {
 ''')
         (original/'crates/horizon-client/src/game.rs').write_text('''
 pub mod native_hooks;
-pub struct Game<'a> { pub positions: &'a mut Vec<[i32;3]>, pub messages: &'a mut Vec<String> }
+use crate::nbt::Tag;
+use std::{collections::BTreeMap, sync::Arc};
+#[derive(Default)]
+struct Data(BTreeMap<String, Tag>);
+impl Data {
+    fn other(&self, key: &str) -> Option<&Tag> { self.0.get(key) }
+    fn set_other(&mut self, key: &str, value: Option<Tag>) {
+        self.0.insert(key.into(), value.unwrap());
+    }
+}
+struct Stack { item: Arc<str>, data: Data }
+impl Stack {
+    fn data_mut(&mut self) -> &mut Data { &mut self.data }
+}
+pub struct Game<'a> {
+    pub positions: &'a mut Vec<[i32;3]>, pub messages: &'a mut Vec<String>,
+    inventory: [Option<Stack>; 2], selected: usize, wear_calls: usize,
+}
 impl Game<'_> {
     pub fn break_block(&mut self,pos:[i32;3])->i32 {self.positions.push(pos); 7}
+    fn mine_block_with_held(&mut self, name: &str, hardness: f32) {
+        let _ = (name, hardness);
+        self.wear_calls += 1;
+    }
+}
+#[test] fn memory_is_specific_to_the_used_pickaxe_and_preserves_components() {
+    let mut positions = Vec::new();
+    let mut messages = Vec::new();
+    let pickaxe = || Some(Stack { item: "minecraft:iron_pickaxe".into(), data: Data::default() });
+    let mut game = Game { positions: &mut positions, messages: &mut messages,
+        inventory: [pickaxe(), pickaxe()], selected: 1, wear_calls: 0 };
+    let unrelated = Tag::Byte(9);
+    let original_lore = Tag::String("Existing line".into());
+    let data = game.inventory[1].as_mut().unwrap().data_mut();
+    data.set_other("minecraft:custom_data", Some(Tag::Compound(BTreeMap::from([
+        ("unrelated".into(), unrelated.clone()),
+    ]))));
+    data.set_other("minecraft:lore", Some(Tag::List(vec![original_lore.clone()])));
+    game.mine_block_with_held("minecraft:stone", 1.0);
+    assert_eq!(game.inventory[1].as_ref().unwrap().data.other("minecraft:lore"),
+        Some(&Tag::List(vec![original_lore.clone()])));
+    game.mine_block_with_held("minecraft:deepslate", 3.0);
+    game.mine_block_with_held("minecraft:deepslate", 3.0);
+    assert_eq!(game.wear_calls, 3);
+    assert!(game.inventory[0].as_ref().unwrap().data.0.is_empty());
+    let data = &game.inventory[1].as_ref().unwrap().data;
+    assert_eq!(data.other("minecraft:lore"),
+        Some(&Tag::List(vec![original_lore, Tag::String("Deepslate Memory".into())])));
+    let Some(Tag::Compound(custom)) = data.other("minecraft:custom_data") else { panic!() };
+    assert_eq!(custom.get("unrelated"), Some(&unrelated));
+    assert_eq!(custom.get("wyrd:deepslate_memory"), Some(&Tag::Byte(1)));
 }
 #[test] fn original_body_and_result_are_preserved() {
     let mut positions=Vec::new();
     let mut messages=Vec::new();
-    let mut game=Game {positions:&mut positions, messages:&mut messages};
+    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0};
     assert_eq!(game.break_block([1,2,3]),7);
     assert_eq!(game.break_block([-1,64,8]),7);
     assert_eq!(positions,vec![[1,2,3],[-1,64,8]]);
@@ -73,7 +131,7 @@ impl Game<'_> {
 #[test] fn mod_registration_and_diagnostic_are_reachable() {
     let mut positions=Vec::new();
     let mut messages=Vec::new();
-    let mut game=Game {positions:&mut positions, messages:&mut messages};
+    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0};
     let mut mods=Vec::new();
     game.native_mods(&mut mods);
     assert_eq!(mods.iter().filter(|m| m.id=="wyrd").count(),1);
@@ -94,7 +152,7 @@ impl Game<'_> {
         before = snapshot(original)
         base = ['--workspace', str(original), '--mods', str(root/'mixins')]
         report = json.loads(run([str(cli), 'check', *base, '--out', str(stage), '--trust-native-mods']).stdout)
-        assert report['injections'] == 3 and report['modules'] == 1
+        assert report['injections'] == 4 and report['modules'] == 1
         assert 'test result: ok.' in report['cargo_stdout']
         first = snapshot(stage)
         second = json.loads(run([str(cli), 'check', *base, '--out', str(stage), '--trust-native-mods']).stdout)
