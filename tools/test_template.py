@@ -286,6 +286,10 @@ impl Game<'_> {
         let _ = (name, hardness);
         self.wear_calls += 1;
     }
+    fn damage_held(&mut self, amount: u32) {
+        let _ = amount;
+        self.wear_calls += 1;
+    }
 }
 #[test] fn memory_is_specific_to_the_used_pickaxe_and_preserves_components() {
     let mut positions = Vec::new();
@@ -352,7 +356,7 @@ impl Game<'_> {
         before = snapshot(original)
         base = ['--workspace', str(original), '--mods', str(root/'mixins')]
         report = json.loads(run([str(cli), 'check', *base, '--out', str(stage), '--trust-native-mods']).stdout)
-        assert report['injections'] == 14 and report['modules'] == 1
+        assert report['injections'] == 17 and report['modules'] == 1
         assert 'test result: ok.' in report['cargo_stdout']
         first = snapshot(stage)
         second = json.loads(run([str(cli), 'check', *base, '--out', str(stage), '--trust-native-mods']).stdout)

@@ -160,6 +160,34 @@ bindings = [
 ]
 
 [[injection]]
+id = "tunnel-trigger-scan"
+kind = "HEAD"
+target = "horizon_client::game::Game<'_>::break_block_as_player"
+helper = "tunnel_scan.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "pos", ty = "[i32;3]", value = "pos" },
+]
+
+[[injection]]
+id = "tunnel-fire"
+kind = "HEAD"
+target = "horizon_client::game::Game<'_>::mine_block_with_held"
+helper = "tunnel_fire.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+]
+
+[[injection]]
+id = "wear-attempt"
+kind = "HEAD"
+target = "horizon_client::game::Game<'_>::damage_held"
+helper = "wear_attempt.rs"
+bindings = [
+  { name = "_game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+]
+
+[[injection]]
 id = "deep-delver-binding"
 kind = "HEAD"
 target = "horizon_client::game::Game<'_>::use_hand"

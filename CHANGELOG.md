@@ -3,7 +3,9 @@
 ## Unreleased
 
 - Bind a pickaxe as Deep Delver by sneak-using an enchanting table with both memories in the main hand and one amethyst shard in the offhand; the binding is one custom-data marker and survives inventory sync and relogging.
-- Add a configurable Tunnel Break keybind (default V) that activates the existing 3x3, six-block Tunnel Break only for a bound eligible pickaxe; keep `/wyrd` diagnostics and use the command path internally.
+- Add a configurable Tunnel Break keybind (default V) that arms the ability; the next mined stone block fires a 3x3, six-block tunnel in the look direction, mine-to-fire, only for a bound eligible pickaxe. Pressing the key again disarms. Keep `/wyrd` diagnostics and use the command path internally.
+- Leave ore intact and continue the tunnel around it instead of stopping; other obstructions still stop the tunnel.
+- Charge Tunnel Break one normal tool-wear attempt per block it breaks, so the ability cannot mine for free. A guard detects whether the recursive break already went through `damage_held` and only adds the missing charge.
 - Show Deep Delver, Tunnel Break and the remaining cooldown in the bound pickaxe's tooltip.
 - Extend Deepslate Memory, Ore Memory, their bonuses, inventory sync and tooltips from iron to diamond and netherite pickaxes.
 - Retarget the existing bonus hooks to pinned-source-compatible HEAD, MODIFY_ARG and RETURN sites; the pinned mixin tool rejects non-HEAD injection into functions with closures.

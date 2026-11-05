@@ -43,7 +43,8 @@ class PackageTests(unittest.TestCase):
                 'mixins/wyrd/ore_bonus.rs', 'mixins/wyrd/effects_tooltip.rs', 'mixins/wyrd/tunnel.rs',
                 'mixins/wyrd/sync_memory.rs', 'mixins/wyrd/binding.rs', 'mixins/wyrd/keybind.rs',
                 'mixins/wyrd/deepslate_scan.rs', 'mixins/wyrd/deepslate_tick_scan.rs',
-                'mixins/wyrd/ore_bonus_scan.rs',
+                'mixins/wyrd/ore_bonus_scan.rs', 'mixins/wyrd/tunnel_scan.rs',
+                'mixins/wyrd/tunnel_fire.rs', 'mixins/wyrd/wear_attempt.rs',
             })
             manifest = json.loads(archive.read('horizon-native.json'))
             self.assertEqual(manifest['id'], 'wyrd')

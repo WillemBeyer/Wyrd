@@ -94,6 +94,122 @@ pub fn ore_resource(block: &str) -> Option<&'static str> {
     })
 }
 
+pub fn is_tunnel_stone(block: &str) -> bool {
+    matches!(
+        block,
+        "minecraft:stone"
+            | "minecraft:deepslate"
+            | "minecraft:granite"
+            | "minecraft:diorite"
+            | "minecraft:andesite"
+            | "minecraft:tuff"
+            | "minecraft:calcite"
+            | "minecraft:netherrack"
+            | "minecraft:blackstone"
+            | "minecraft:basalt"
+            | "minecraft:smooth_basalt"
+            | "minecraft:end_stone"
+    )
+}
+
+pub fn tunnel_plan(origin: [i32; 3], look: [f64; 3]) -> Vec<Vec<[i32; 3]>> {
+    let [x, y, z] = look.map(f64::abs);
+    let direction = if y >= x && y >= z {
+        [0, if look[1] >= 0.0 { 1 } else { -1 }, 0]
+    } else if x >= z {
+        [if look[0] >= 0.0 { 1 } else { -1 }, 0, 0]
+    } else {
+        [0, 0, if look[2] >= 0.0 { 1 } else { -1 }]
+    };
+    (0..6)
+        .map(|step| {
+            (-1..=1)
+                .flat_map(|a| {
+                    (-1..=1).map(move |b| {
+                        if direction[1] != 0 {
+                            [
+                                origin[0] + a,
+                                origin[1] + direction[1] * step,
+                                origin[2] + b,
+                            ]
+                        } else if direction[0] != 0 {
+                            [
+                                origin[0] + direction[0] * step,
+                                origin[1] + a,
+                                origin[2] + b,
+                            ]
+                        } else {
+                            [
+                                origin[0] + a,
+                                origin[1] + b,
+                                origin[2] + direction[2] * step,
+                            ]
+                        }
+                    })
+                })
+                .collect()
+        })
+        .collect()
+}
+
+pub struct PendingTunnel {
+    pub pos: [i32; 3],
+    pub look: [f64; 3],
+    pub target: String,
+}
+
+mod tunnel_state {
+    #![allow(clippy::missing_const_for_thread_local)]
+
+    thread_local! {
+        pub static ARMED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+        pub static PENDING: std::cell::RefCell<Option<super::PendingTunnel>> =
+            const { std::cell::RefCell::new(None) };
+        pub static WEAR_ATTEMPTED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    }
+}
+
+pub fn set_tunnel_armed(armed: bool) {
+    tunnel_state::ARMED.set(armed);
+    clear_pending_tunnel();
+}
+
+pub fn tunnel_armed() -> bool {
+    tunnel_state::ARMED.get()
+}
+
+pub fn take_tunnel_armed() -> bool {
+    tunnel_state::ARMED.replace(false)
+}
+
+pub fn set_pending_tunnel(pos: [i32; 3], look: [f64; 3], target: String) {
+    tunnel_state::PENDING.with(|pending| {
+        *pending.borrow_mut() = Some(PendingTunnel { pos, look, target });
+    });
+}
+
+pub fn take_pending_tunnel() -> Option<PendingTunnel> {
+    tunnel_state::PENDING.with(|pending| pending.take())
+}
+
+pub fn clear_pending_tunnel() {
+    tunnel_state::PENDING.with(|pending| {
+        let _ = pending.take();
+    });
+}
+
+pub fn mark_wear_attempt() {
+    tunnel_state::WEAR_ATTEMPTED.set(true);
+}
+
+pub fn clear_wear_attempt() {
+    tunnel_state::WEAR_ATTEMPTED.set(false);
+}
+
+pub fn take_wear_attempt() -> bool {
+    tunnel_state::WEAR_ATTEMPTED.replace(false)
+}
+
 pub fn tunnel_cooldown_seconds(remaining: f32) -> u32 {
     (remaining * (TUNNEL_COOLDOWN_TICKS / 20) as f32).ceil() as u32
 }
@@ -148,6 +264,60 @@ mod tests {
             Some("minecraft:raw_iron")
         );
         assert_eq!(take_ore_bonus_resource([0; 3], "minecraft:raw_iron"), None);
+    }
+
+    #[test]
+    fn tunnel_plan_follows_the_look_axis() {
+        let forward = tunnel_plan([10, 64, -5], [1.0, 0.0, 0.0]);
+        assert_eq!(forward.len(), 6);
+        assert!(forward.iter().all(|slice| slice.len() == 9));
+        assert!(forward[0].contains(&[10, 64, -5]));
+        assert!(forward[5].contains(&[15, 64, -5]));
+
+        let up = tunnel_plan([10, 64, -5], [0.0, 1.0, 0.0]);
+        assert!(up[0].contains(&[11, 64, -4]));
+        assert!(up[5].contains(&[10, 69, -5]));
+    }
+
+    #[test]
+    fn tunnel_plan_uses_the_dominant_look_axis() {
+        let plan = tunnel_plan([0, 0, 0], [0.2, 0.9, 0.1]);
+        assert!(plan[1].contains(&[0, 1, 0]));
+    }
+
+    #[test]
+    fn tunnel_stone_list_is_explicit() {
+        for block in [
+            "minecraft:stone",
+            "minecraft:deepslate",
+            "minecraft:tuff",
+            "minecraft:netherrack",
+            "minecraft:end_stone",
+        ] {
+            assert!(is_tunnel_stone(block), "{block}");
+        }
+        assert!(!is_tunnel_stone("minecraft:dirt"));
+        assert!(!is_tunnel_stone("minecraft:iron_ore"));
+    }
+
+    #[test]
+    fn tunnel_state_arms_and_clears_pending() {
+        set_tunnel_armed(true);
+        assert!(tunnel_armed());
+        set_pending_tunnel([1, 2, 3], [0.0, 1.0, 0.0], "minecraft:stone".to_owned());
+        assert!(take_pending_tunnel().is_some());
+        assert!(take_tunnel_armed());
+        assert!(!tunnel_armed());
+        assert!(take_pending_tunnel().is_none());
+    }
+
+    #[test]
+    fn wear_attempt_is_consumed_once() {
+        clear_wear_attempt();
+        assert!(!take_wear_attempt());
+        mark_wear_attempt();
+        assert!(take_wear_attempt());
+        assert!(!take_wear_attempt());
     }
 
     #[test]

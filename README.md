@@ -21,12 +21,17 @@ in the offhand. The table binds that pickaxe as **Deep Delver**, consumes
 exactly one shard, and stores the binding on the pickaxe. The binding survives
 inventory sync and relogging, and failed attempts consume nothing.
 
-Once bound, press the **Tunnel Break** key while playing. The default is **V**;
-rebind it on the Wyrd page in Options > Mods. Tunnel Break mines matching stone in a 3x3
-area up to six blocks deep using normal durability and drops. It stops before a
-slice containing ore or another obstruction and has a 30-second cooldown. The
-tooltip shows the binding, the current key and the remaining cooldown. Unbound
-pickaxes cannot use the ability.
+Once bound, press the **Tunnel Break** key while playing to arm it, then mine a
+stone block to fire. The default is **V**; rebind it on the Wyrd page in Options >
+Mods. Pressing it again disarms.
+
+The tunnel follows your look direction: looking forward digs forward, looking up
+digs up, and looking down digs down. It mines the targeted stone type in a 3x3
+cross-section up to six blocks deep. Every block the tunnel breaks costs the
+same durability as a normal block break, and drops are normal. Ore is left
+intact and the tunnel continues around it; other obstructions stop it. It has a
+30-second cooldown. The tooltip shows the binding, the current key and the
+remaining cooldown. Unbound pickaxes cannot use the ability.
 
 The Mods entry, `/wyrd` diagnostic, and block-break log are available for testing.
 
@@ -80,7 +85,9 @@ mixins/wyrd/memory.rs           Confirmed survival mining and pickaxe memory
 mixins/wyrd/ore_bonus.rs        Bonus resources after vanilla ore drops
 mixins/wyrd/binding.rs          Enchanting-table Deep Delver binding
 mixins/wyrd/keybind.rs          Tunnel Break native key handler
-mixins/wyrd/tunnel.rs           Server-authoritative Tunnel Break
+mixins/wyrd/tunnel.rs           Tunnel Break arm/disarm command
+mixins/wyrd/tunnel_scan.rs      Mine-to-fire trigger
+mixins/wyrd/tunnel_fire.rs      Server-authoritative Tunnel Break volume
 mixins/wyrd/effects_tooltip.rs  Memory and Deep Delver tooltip lines
 mixins/wyrd/runtime.rs          Shared testable Rust library and injected module
 compatibility.json             Pinned upstream versions and source hash

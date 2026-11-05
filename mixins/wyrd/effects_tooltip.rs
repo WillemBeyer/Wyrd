@@ -64,7 +64,7 @@ fn show_memory_effects(
         let label = horizon_client::keybinds::display_name(&key).plain();
         let remaining = tunnel_cooldown_seconds(game.cooldowns.percent(TUNNEL_COOLDOWN_GROUP, 0.0));
         let status = if remaining == 0 {
-            format!("Tunnel Break: Ready ({label})")
+            format!("Tunnel Break: Ready ({label}, then mine)")
         } else {
             format!("Tunnel Break: {remaining}s cooldown ({label})")
         };

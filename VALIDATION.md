@@ -12,7 +12,7 @@ Full pinned-Horizon stage/check/test and an interactive game session are separat
 checks; see docs/DEVELOPMENT.md. No player resources or worlds are needed for the
 fast fixture. No playable alpha or registry-ready release is claimed.
 
-## Local setup results — 2026-11-04
+## Local setup results â€” 2026-11-04
 
 - Windows / Python 3.13: two source-packaging tests passed, including deterministic bytes, bundled notices and rejection of inconsistent Horizon pins.
 - Python compileall: passed for the tooling.
@@ -23,7 +23,7 @@ fast fixture. No playable alpha or registry-ready release is claimed.
 - Evidence: https://github.com/WillemBeyer/Wyrd/actions/runs/41907932719 (successful run).
 - Full pinned-game build and interactive playtest: not performed. No game compatibility or playable magic features are claimed.
 
-## Windows rebuild shortcut — 2026-11-04
+## Windows rebuild shortcut â€” 2026-11-04
 
 - Verified against installed Horizon Launcher 0.2.41 help: native-build supports --instance and --profile dev.
 - Confirmed Wyrd Dev exists as instance ID wyrd-dev.
@@ -31,14 +31,14 @@ fast fixture. No playable alpha or registry-ready release is claimed.
 - A missing-launcher check returns exit code 2 and prints recovery instructions.
 - Local .wyrd-launcher.txt is ignored by Git. No game build or playtest was started for this shortcut change.
 
-## Windows Rust editor setup — 2026-11-04
+## Windows Rust editor setup â€” 2026-11-04
 
 - Installed the official Rust 1.95.0 GNU developer toolchain for the user, including rust-src, rustfmt and clippy; Horizon keeps its separate managed compiler.
 - Cargo metadata successfully loads the Wyrd workspace on Windows.
 - cargo check, formatting, clippy with warnings denied, and workspace tests all passed on Windows.
 - Existing VS Code processes need a full restart to receive the user PATH update. The editor UI was not restarted automatically.
 
-## Visible starter logging — 2026-11-04
+## Visible starter logging â€” 2026-11-04
 
 - Inspected the existing launcher build metadata: Wyrd 0.1.0 is included on pinned Horizon ba6344a. The initial inference about the Nightly banner was not proof of the running executable; see the direct-launch evidence below.
 - The prior runtime used raw stderr, so latest.log was not a reliable place to look for the test message.
@@ -46,7 +46,7 @@ fast fixture. No playable alpha or registry-ready release is claimed.
 - Windows cargo check, formatting, clippy, both runtime tests and both packaging tests passed.
 - Full game rebuild/playtest of this logging change still needs the development shortcut; CI covers the compiled bundle fixture separately.
 
-## Native registration and real-game smoke test — 2026-11-04
+## Native registration and real-game smoke test â€” 2026-11-04
 
 - Setup fix commit: `f646830`; GitHub formatting, clippy, runtime tests,
   compiled three-hook fixture/AST audit and packaging checks all passed:
@@ -114,7 +114,32 @@ different Horizon source revision.
   a matching drop at the active player break position. No game was launched.
 
 
-## Windows normal-startup stack-overflow workaround — 2026-11-04
+## Tunnel Break arm-to-mine and ore bypass - 2026-11-05
+
+- The Tunnel Break key now arms the ability; the next successfully mined common
+  stone block fires it from that block's position. Pressing the key again
+  disarms. The tunnel direction is the dominant look axis, so looking up or
+  down produces a vertical 3x3 tunnel.
+- Ore and ancient debris are skipped and left intact while the slice continues;
+  other non-stone obstructions still stop the tunnel. The 3x3x6 size, 30-second
+  cooldown and normal drops are unchanged. A wear-attempt mark ensures each
+  tunnel block costs one normal tool-wear attempt.
+- Standalone checks on main: `cargo fmt --all --check`, `cargo check
+  --workspace --all-targets --locked --offline`, `cargo test --workspace
+  --all-targets --locked --offline` (10 tests) and `cargo clippy
+  --workspace --all-targets --locked --offline -- -D warnings` passed.
+- `tools/test_template.py` compiled the real bundle against the fixture:
+  `compiled_runtime_and_original_body: true`, `only_planned_asts_changed: true`,
+  17 injections, one module.
+- Pinned-source plan/apply against the same Horizon pin: 17 injections and one
+  module, `"status": "ok"`. The repo source audit passed:
+  `all original ASTs preserved apart from the planned hooks and support module`.
+- Full pinned `test_stage.py` and staged game `cargo check` were not completed
+  on this Windows host: `test_stage.py` hits the inherited tarfile symlink path,
+  and `cargo check` needs `gcc.exe` for `ring`. No game launch or playtest was
+  performed.
+
+## Windows normal-startup stack-overflow workaround â€” 2026-11-04
 
 - User reported Windows status 0xc00000fd / main stack overflow when the pinned dev-profile game started normally, before Wyrd registration. The earlier world-direct smoke test missed that path.
 - Rebuilt the same unchanged mod source with Horizon's supported incremental performance profile. Compiler output completed in 1m 41s; full launcher build/install completed in 251 s.
