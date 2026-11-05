@@ -109,3 +109,13 @@ bindings = [
   { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
   { name = "stack", ty = "&crate::game::ItemStack", value = "stack" },
 ]
+
+[[injection]]
+id = "sync-pickaxe-memory"
+kind = "RETURN"
+target = "horizon_client::lan::guest::stack_to_network"
+helper = "sync_memory.rs"
+bindings = [
+  { name = "network", ty = "Option<Stack>", value = "$value" },
+  { name = "local", ty = "&Option<ItemStack>", value = "s" },
+]

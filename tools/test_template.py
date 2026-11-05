@@ -56,6 +56,19 @@ pub mod packets {
     }
 }
 pub mod game;
+pub mod lan;
+pub mod items {
+    pub(crate) use crate::game::Stack as ItemStack;
+}
+pub mod item {
+    use crate::nbt::Tag;
+    pub mod component {
+        pub const CUSTOM_DATA: i32 = 0;
+        pub const LORE: i32 = 8;
+    }
+    pub enum Component { Nbt(Tag), Lore(Vec<Tag>) }
+    pub struct Stack { pub added: Vec<(i32, Component)> }
+}
 pub mod nbt {
     use std::collections::BTreeMap;
     pub type JavaString = String;
@@ -63,6 +76,19 @@ pub mod nbt {
     pub enum Tag {
         Byte(i8), String(String), List(Vec<Tag>), Compound(BTreeMap<String, Tag>),
     }
+}
+''')
+        (original/'crates/horizon-client/src/lan').mkdir()
+        (original/'crates/horizon-client/src/lan.rs').write_text('pub mod guest;\n')
+        (original/'crates/horizon-client/src/lan/guest.rs').write_text('''
+use crate::{item::Stack, items::ItemStack};
+pub(crate) fn stack_to_network(
+    item_id: impl Fn(&str) -> i32,
+    synced_id: impl Fn(&str, &str) -> Option<i32>,
+    s: &Option<ItemStack>,
+) -> Option<Stack> {
+    let _ = (item_id, synced_id, s);
+    None
 }
 ''')
         (original/'crates/horizon-client/src/game').mkdir()
@@ -134,23 +160,23 @@ impl Titles {
 }
 use std::{collections::BTreeMap, sync::Arc};
 #[derive(Default)]
-struct Data(BTreeMap<String, Tag>);
+pub(crate) struct Data(BTreeMap<String, Tag>);
 impl Data {
-    fn other(&self, key: &str) -> Option<&Tag> { self.0.get(key) }
+    pub(crate) fn other(&self, key: &str) -> Option<&Tag> { self.0.get(key) }
     fn set_other(&mut self, key: &str, value: Option<Tag>) {
         self.0.insert(key.into(), value.unwrap());
     }
 }
 type BlockStateId = u32;
 type ItemStack = Stack;
-struct Stack { item: Arc<str>, data: Data }
+pub(crate) struct Stack { pub(crate) item: Arc<str>, data: Data }
 impl Stack {
     fn new(item: &str, _: u32) -> Self {
         Self { item: item.into(), data: Data::default() }
     }
     fn enchantment_level(&self, _: &str) -> u32 { 0 }
     fn data_mut(&mut self) -> &mut Data { &mut self.data }
-    fn data(&self) -> Option<&Data> { Some(&self.data) }
+    pub(crate) fn data(&self) -> Option<&Data> { Some(&self.data) }
 }
 #[derive(Default)]
 struct Rules;
@@ -239,7 +265,7 @@ impl Game<'_> {
         before = snapshot(original)
         base = ['--workspace', str(original), '--mods', str(root/'mixins')]
         report = json.loads(run([str(cli), 'check', *base, '--out', str(stage), '--trust-native-mods']).stdout)
-        assert report['injections'] == 7 and report['modules'] == 1
+        assert report['injections'] == 8 and report['modules'] == 1
         assert 'test result: ok.' in report['cargo_stdout']
         first = snapshot(stage)
         second = json.loads(run([str(cli), 'check', *base, '--out', str(stage), '--trust-native-mods']).stdout)

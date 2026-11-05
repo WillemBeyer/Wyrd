@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Preserve pickaxe memories during inventory sync so the tooltip can show their effects in singleplayer and LAN.
+
 - Let iron pickaxes learn Iron Memory for a 20% chance of one extra raw iron on later iron ore breaks without Silk Touch.
 - Show the effects of unlocked memories in the pickaxe tooltip.
 
