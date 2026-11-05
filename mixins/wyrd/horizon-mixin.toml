@@ -72,3 +72,14 @@ bindings = [
   { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
   { name = "block", ty = "&str", value = "name" },
 ]
+
+[[injection]]
+id = "deepslate-mining-progress"
+kind = "RETURN"
+target = "horizon_client::game::hand::Game<'_>::destroy_progress"
+helper = "mining_bonus.rs"
+bindings = [
+  { name = "progress", ty = "f32", value = "$value" },
+  { name = "game", ty = "&crate::game::Game<'_>", value = "self" },
+  { name = "pos", ty = "[i32;3]", value = "pos" },
+]

@@ -41,9 +41,24 @@ def main():
         (original/'crates/horizon-client/Cargo.toml').write_text('[package]\nname="horizon-client"\nversion="0.1.0"\nedition="2024"\n[dependencies]\nlog="0.4"\n')
         (original/'crates/horizon-client/src/lib.rs').write_text('''
 extern crate self as horizon_world;
+extern crate self as horizon_protocol;
+extern crate self as horizon_client;
+pub mod text {
+    pub struct Text(pub String);
+    impl Text {
+        pub fn literal(text: &str) -> Self { Self(text.into()) }
+    }
+}
+pub mod packets {
+    pub mod play {
+        pub struct Text { pub text: crate::nbt::Tag }
+        pub enum Clientbound { SetActionBarText(Text) }
+    }
+}
 pub mod game;
 pub mod nbt {
     use std::collections::BTreeMap;
+    pub type JavaString = String;
     #[derive(Clone, Debug, PartialEq)]
     pub enum Tag {
         Byte(i8), String(String), List(Vec<Tag>), Compound(BTreeMap<String, Tag>),
@@ -66,9 +81,36 @@ impl Game<'_> {
     pub fn native_chat(&mut self, text: &str) { self.messages.push(text.to_owned()); }
 }
 ''')
+        (original/'crates/horizon-client/src/game/hand.rs').write_text('''
+use super::Game;
+impl Game<'_> {
+    fn destroy_progress(&self, pos: [i32; 3]) -> f32 {
+        if pos[1] < 0 { return 0.0; }
+        0.1
+    }
+}
+''')
         (original/'crates/horizon-client/src/game.rs').write_text('''
 pub mod native_hooks;
+pub mod hand;
 use crate::nbt::Tag;
+#[derive(Default)]
+struct World;
+impl World {
+    fn block(&self, _: i32, _: i32, _: i32) -> u32 { 0 }
+}
+#[derive(Default)]
+struct Resources;
+struct Facts { name: String }
+impl Resources {
+    fn facts(&self) -> &Self { self }
+    fn get(&self, _: u32) -> Facts { Facts { name: "minecraft:deepslate".into() } }
+}
+#[derive(Default)]
+struct Titles;
+impl Titles {
+    fn set_overlay(&mut self, _: crate::text::Text, _: bool) {}
+}
 use std::{collections::BTreeMap, sync::Arc};
 #[derive(Default)]
 struct Data(BTreeMap<String, Tag>);
@@ -81,12 +123,16 @@ impl Data {
 struct Stack { item: Arc<str>, data: Data }
 impl Stack {
     fn data_mut(&mut self) -> &mut Data { &mut self.data }
+    fn data(&self) -> Option<&Data> { Some(&self.data) }
 }
 pub struct Game<'a> {
     pub positions: &'a mut Vec<[i32;3]>, pub messages: &'a mut Vec<String>,
     inventory: [Option<Stack>; 2], selected: usize, wear_calls: usize,
+    world: World, res: Resources, titles: Titles, lan_acting: Option<u32>,
+    guest_packets: Vec<crate::packets::play::Clientbound>,
 }
 impl Game<'_> {
+    fn held(&self) -> Option<&Stack> { self.inventory[self.selected].as_ref() }
     pub fn break_block(&mut self,pos:[i32;3])->i32 {self.positions.push(pos); 7}
     fn mine_block_with_held(&mut self, name: &str, hardness: f32) {
         let _ = (name, hardness);
@@ -98,7 +144,7 @@ impl Game<'_> {
     let mut messages = Vec::new();
     let pickaxe = || Some(Stack { item: "minecraft:iron_pickaxe".into(), data: Data::default() });
     let mut game = Game { positions: &mut positions, messages: &mut messages,
-        inventory: [pickaxe(), pickaxe()], selected: 1, wear_calls: 0 };
+        inventory: [pickaxe(), pickaxe()], selected: 1, wear_calls: 0, world: World, res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new() };
     let unrelated = Tag::Byte(9);
     let original_lore = Tag::String("Existing line".into());
     let data = game.inventory[1].as_mut().unwrap().data_mut();
@@ -123,7 +169,7 @@ impl Game<'_> {
 #[test] fn original_body_and_result_are_preserved() {
     let mut positions=Vec::new();
     let mut messages=Vec::new();
-    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0};
+    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0, world: World, res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new()};
     assert_eq!(game.break_block([1,2,3]),7);
     assert_eq!(game.break_block([-1,64,8]),7);
     assert_eq!(positions,vec![[1,2,3],[-1,64,8]]);
@@ -131,7 +177,7 @@ impl Game<'_> {
 #[test] fn mod_registration_and_diagnostic_are_reachable() {
     let mut positions=Vec::new();
     let mut messages=Vec::new();
-    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0};
+    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0, world: World, res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new()};
     let mut mods=Vec::new();
     game.native_mods(&mut mods);
     assert_eq!(mods.iter().filter(|m| m.id=="wyrd").count(),1);
@@ -152,7 +198,7 @@ impl Game<'_> {
         before = snapshot(original)
         base = ['--workspace', str(original), '--mods', str(root/'mixins')]
         report = json.loads(run([str(cli), 'check', *base, '--out', str(stage), '--trust-native-mods']).stdout)
-        assert report['injections'] == 4 and report['modules'] == 1
+        assert report['injections'] == 5 and report['modules'] == 1
         assert 'test result: ok.' in report['cargo_stdout']
         first = snapshot(stage)
         second = json.loads(run([str(cli), 'check', *base, '--out', str(stage), '--trust-native-mods']).stdout)

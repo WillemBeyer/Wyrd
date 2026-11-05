@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Give remembered iron pickaxes 15% faster deepslate mining and announce first unlocks above the hotbar.
+
 - Give the exact iron pickaxe used to mine deepslate a persistent Deepslate Memory and tooltip line.
 
 - Use the incremental performance profile on Windows to avoid a title-screen startup stack overflow in the pinned dev build.

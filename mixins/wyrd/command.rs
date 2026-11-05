@@ -26,7 +26,7 @@ fn diagnostic(game: &mut crate::game::Game<'_>, command: &str, ran: &mut bool) {
     if !*ran && matches!(command.trim(), "wyrd" | "wyrd status") {
         *ran = true;
         let message = if game.native_on("wyrd") {
-            "[wyrd] Wyrd 0.1.0 is loaded and enabled. Native test scaffold; no magic yet."
+            "[wyrd] Wyrd 0.1.0 is loaded and enabled. Deepslate Memory boosts deepslate mining."
         } else {
             "[wyrd] Wyrd 0.1.0 is loaded but disabled in Options > Mods."
         };

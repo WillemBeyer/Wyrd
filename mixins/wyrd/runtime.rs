@@ -24,6 +24,9 @@
 // Put testable mod logic here. This file is both the standalone Cargo library
 // and the injected `crate::game::wyrd` module; no generated copy exists.
 
+pub const DEEPSLATE_MEMORY_KEY: &str = "wyrd:deepslate_memory";
+pub const DEEPSLATE_SPEED_MULTIPLIER: f32 = 1.15;
+
 pub fn block_break_message(pos: [i32; 3]) -> String {
     format!(
         "[wyrd] Breaking block at {}, {}, {}",

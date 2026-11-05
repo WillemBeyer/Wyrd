@@ -6,13 +6,14 @@ through exploration.
 
 **Status: first Item Memory prototype.** In survival, mine deepslate with an
 iron pickaxe to give that pickaxe **Deepslate Memory**. Hover over the item to
-read it. Wyrd writes the memory to the pickaxe's own saved item data.
+read it. Wyrd writes the memory to the pickaxe's own saved item data. The
+remembered pickaxe mines deepslate 15% faster. A brief message above the hotbar
+announces the first unlock.
 
 The Mods entry, `/wyrd` diagnostic, and block-break log are available for testing.
 
 ## Next playable goals
 
-Once item memory is proven in play, try a small mining-speed bonus for deepslate.
 The Ember Path is the later full loop: a sword develops Ember Memory through
 Blaze encounters, an essence helps bind it, and the player chooses Flame Burst
 or Cinder Guard. See [the roadmap](docs/ROADMAP.md).

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 publish = false
 [dependencies]
-syn = { version = "2", features = ["full", "extra-traits"] }
+syn = { version = "2", features = ["full", "extra-traits", "visit-mut"] }
 quote = "1"
 serde_json = "1"
 prettyplease = "0.2"

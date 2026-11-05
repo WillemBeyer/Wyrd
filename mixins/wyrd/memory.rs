@@ -42,7 +42,7 @@ fn remember_mined_deepslate(game: &mut crate::game::Game<'_>, block: &str) {
         Some(Tag::Compound(entries)) => entries.clone(),
         Some(_) => return,
     };
-    let key = "wyrd:deepslate_memory".into();
+    let key = crate::game::wyrd::DEEPSLATE_MEMORY_KEY.into();
     if custom_data.contains_key(&key) {
         return;
     }
@@ -63,5 +63,14 @@ fn remember_mined_deepslate(game: &mut crate::game::Game<'_>, block: &str) {
     custom_data.insert(key, Tag::Byte(1));
     data.set_other("minecraft:custom_data", Some(Tag::Compound(custom_data)));
     data.set_other("minecraft:lore", Some(Tag::List(lore)));
+    let message = "Deepslate Memory unlocked: +15% mining speed on deepslate";
+    if game.lan_acting.is_some() {
+        use horizon_protocol::packets::play::{Clientbound, Text};
+        game.guest_packets.push(Clientbound::SetActionBarText(Text {
+            text: Tag::String(message.into()),
+        }));
+    } else {
+        game.titles.set_overlay(horizon_client::text::Text::literal(message), false);
+    }
     log::info!(target: "horizon::wyrd", "[wyrd] Iron pickaxe gained Deepslate Memory");
 }
