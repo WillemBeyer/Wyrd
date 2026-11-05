@@ -148,7 +148,7 @@ impl World {
 }
 #[derive(Default)]
 struct Resources;
-struct Facts { name: String }
+struct Facts { name: Arc<str> }
 impl Resources {
     fn facts(&self) -> &Self { self }
     fn get(&self, _: u32) -> Facts { Facts { name: "minecraft:deepslate".into() } }
