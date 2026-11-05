@@ -40,6 +40,7 @@ class PackageTests(unittest.TestCase):
                 'mixins/wyrd/break.rs', 'mixins/wyrd/runtime.rs',
                 'mixins/wyrd/list.rs', 'mixins/wyrd/command.rs',
                 'mixins/wyrd/memory.rs', 'mixins/wyrd/mining_bonus.rs',
+                'mixins/wyrd/iron_bonus.rs', 'mixins/wyrd/effects_tooltip.rs',
             })
             manifest = json.loads(archive.read('horizon-native.json'))
             self.assertEqual(manifest['id'], 'wyrd')

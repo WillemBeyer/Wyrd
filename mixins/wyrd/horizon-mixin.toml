@@ -64,7 +64,7 @@ bindings = [
 ]
 
 [[injection]]
-id = "remember-mined-deepslate"
+id = "remember-mined-block"
 kind = "HEAD"
 target = "horizon_client::game::Game<'_>::mine_block_with_held"
 helper = "memory.rs"
@@ -82,4 +82,30 @@ bindings = [
   { name = "progress", ty = "f32", value = "$value" },
   { name = "game", ty = "&crate::game::Game<'_>", value = "self" },
   { name = "pos", ty = "[i32;3]", value = "pos" },
+]
+
+[[injection]]
+id = "iron-memory-drop"
+kind = "HEAD"
+target = "horizon_client::game::Game<'_>::block_loot_at"
+helper = "iron_bonus.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "state", ty = "crate::game::BlockStateId", value = "state" },
+  { name = "held", ty = "Option<&crate::game::ItemStack>", value = "held" },
+  { name = "pos", ty = "[i32;3]", value = "pos" },
+]
+
+[[injection]]
+id = "pickaxe-memory-effects"
+kind = "MODIFY_VARIABLE"
+target = "horizon_client::game::stations::Game<'_>::draw_stack_tooltip_with"
+variable = { name = "lines", ordinal = 0, at = "STORE" }
+require = 1
+ordinal = 0
+helper = "effects_tooltip.rs"
+bindings = [
+  { name = "lines", ty = "Vec<(horizon_client::text::Text, u32)>", value = "$value" },
+  { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
+  { name = "stack", ty = "&crate::game::ItemStack", value = "stack" },
 ]

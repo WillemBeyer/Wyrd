@@ -26,6 +26,15 @@
 
 pub const DEEPSLATE_MEMORY_KEY: &str = "wyrd:deepslate_memory";
 pub const DEEPSLATE_SPEED_MULTIPLIER: f32 = 1.15;
+pub const IRON_MEMORY_KEY: &str = "wyrd:iron_memory";
+pub const IRON_BONUS_CHANCE: f32 = 0.20;
+
+pub const DEEPSLATE_EFFECT: &str = "+15% mining speed on deepslate";
+pub const IRON_EFFECT: &str = "20% chance for +1 raw iron from iron ore (no Silk Touch)";
+
+pub fn is_iron_ore(block: &str) -> bool {
+    matches!(block, "minecraft:iron_ore" | "minecraft:deepslate_iron_ore")
+}
 
 pub fn block_break_message(pos: [i32; 3]) -> String {
     format!(

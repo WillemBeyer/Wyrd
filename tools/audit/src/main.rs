@@ -20,13 +20,13 @@ fn canonical(items: &[Item]) -> String {
         items: items.to_vec(),
     })
 }
-struct ReturnAudit<'a> {
+struct ValueAudit<'a> {
     helper: &'a syn::ItemFn,
     bindings: &'a [serde_json::Value],
     removed: usize,
 }
 
-impl VisitMut for ReturnAudit<'_> {
+impl VisitMut for ValueAudit<'_> {
     fn visit_expr_mut(&mut self, expr: &mut Expr) {
         if let Expr::Call(call) = expr
             && let Expr::Paren(scoped) = &*call.func
@@ -54,7 +54,7 @@ impl VisitMut for ReturnAudit<'_> {
             let actual_fn: Item = syn::parse_quote!(fn audit() { #expr });
             let expected_fn: Item = syn::parse_quote!(fn audit() { #expected });
             assert_eq!(canonical(&[actual_fn]), canonical(&[expected_fn]));
-            *expr = original.expect("RETURN wrapper did not contain the original value");
+            *expr = original.expect("wrapper did not contain the original value");
             self.removed += 1;
         }
         syn::visit_mut::visit_expr_mut(self, expr);
@@ -78,14 +78,14 @@ fn main() {
             .collect();
         assert_eq!(p["cancellable"], false);
         let helper: syn::ItemFn = syn::parse_str(p["helper_source"].as_str().unwrap()).unwrap();
-        if p["kind"] == "RETURN" {
-            let mut audit = ReturnAudit {
+        if p["kind"] == "RETURN" || p["kind"] == "MODIFY_VARIABLE" {
+            let mut audit = ValueAudit {
                 helper: &helper,
                 bindings: p["bindings"].as_array().unwrap(),
                 removed: 0,
             };
             audit.visit_block_mut(block(&mut tree.items, &node));
-            assert!(audit.removed > 0, "missing planned RETURN wrapper");
+            assert!(audit.removed > 0, "missing planned value wrapper");
             continue;
         }
         assert_eq!(p["kind"], "HEAD");

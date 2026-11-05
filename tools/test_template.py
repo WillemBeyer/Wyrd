@@ -90,12 +90,33 @@ impl Game<'_> {
     }
 }
 ''')
+        (original/'crates/horizon-client/src/game/stations.rs').write_text('''
+use super::{Game, ItemStack};
+impl Game<'_> {
+    fn draw_stack_tooltip_with(&mut self, stack: &ItemStack, creative: bool) {
+        let mut lines = self.stack_tooltip_lines(stack, false, creative);
+        lines.clear();
+    }
+    fn stack_tooltip_lines(
+        &self, stack: &ItemStack, nested: bool, creative: bool,
+    ) -> Vec<(crate::text::Text, u32)> {
+        let _ = (stack, nested, creative);
+        Vec::new()
+    }
+}
+''')
         (original/'crates/horizon-client/src/game.rs').write_text('''
 pub mod native_hooks;
 pub mod hand;
+pub mod stations;
 use crate::nbt::Tag;
 #[derive(Default)]
-struct World;
+struct World { random: Random }
+#[derive(Default)]
+struct Random;
+impl Random {
+    fn next_float(&mut self) -> f32 { 1.0 }
+}
 impl World {
     fn block(&self, _: i32, _: i32, _: i32) -> u32 { 0 }
 }
@@ -120,20 +141,40 @@ impl Data {
         self.0.insert(key.into(), value.unwrap());
     }
 }
+type BlockStateId = u32;
+type ItemStack = Stack;
 struct Stack { item: Arc<str>, data: Data }
 impl Stack {
+    fn new(item: &str, _: u32) -> Self {
+        Self { item: item.into(), data: Data::default() }
+    }
+    fn enchantment_level(&self, _: &str) -> u32 { 0 }
     fn data_mut(&mut self) -> &mut Data { &mut self.data }
     fn data(&self) -> Option<&Data> { Some(&self.data) }
 }
+#[derive(Default)]
+struct Rules;
+impl Rules {
+    fn bool(&self, _: &str) -> bool { true }
+}
+#[derive(Default)]
+struct Ui { rules: Rules }
 pub struct Game<'a> {
     pub positions: &'a mut Vec<[i32;3]>, pub messages: &'a mut Vec<String>,
     inventory: [Option<Stack>; 2], selected: usize, wear_calls: usize,
-    world: World, res: Resources, titles: Titles, lan_acting: Option<u32>,
+    ui: Ui, world: World, res: Resources, titles: Titles, lan_acting: Option<u32>,
     guest_packets: Vec<crate::packets::play::Clientbound>,
 }
 impl Game<'_> {
     fn held(&self) -> Option<&Stack> { self.inventory[self.selected].as_ref() }
     pub fn break_block(&mut self,pos:[i32;3])->i32 {self.positions.push(pos); 7}
+    fn pop_resource(&mut self, _: [i32; 3], _: ItemStack) {}
+    fn block_loot_at(
+        &mut self, pos: [i32; 3], state: BlockStateId, held: Option<&ItemStack>,
+    ) -> Vec<ItemStack> {
+        let _ = (pos, state, held);
+        Vec::new()
+    }
     fn mine_block_with_held(&mut self, name: &str, hardness: f32) {
         let _ = (name, hardness);
         self.wear_calls += 1;
@@ -142,9 +183,9 @@ impl Game<'_> {
 #[test] fn memory_is_specific_to_the_used_pickaxe_and_preserves_components() {
     let mut positions = Vec::new();
     let mut messages = Vec::new();
-    let pickaxe = || Some(Stack { item: "minecraft:iron_pickaxe".into(), data: Data::default() });
+    let pickaxe = || Some(Stack::new("minecraft:iron_pickaxe", 1));
     let mut game = Game { positions: &mut positions, messages: &mut messages,
-        inventory: [pickaxe(), pickaxe()], selected: 1, wear_calls: 0, world: World, res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new() };
+        inventory: [pickaxe(), pickaxe()], selected: 1, wear_calls: 0, ui: Ui::default(), world: World::default(), res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new() };
     let unrelated = Tag::Byte(9);
     let original_lore = Tag::String("Existing line".into());
     let data = game.inventory[1].as_mut().unwrap().data_mut();
@@ -169,7 +210,7 @@ impl Game<'_> {
 #[test] fn original_body_and_result_are_preserved() {
     let mut positions=Vec::new();
     let mut messages=Vec::new();
-    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0, world: World, res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new()};
+    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0, ui: Ui::default(), world: World::default(), res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new()};
     assert_eq!(game.break_block([1,2,3]),7);
     assert_eq!(game.break_block([-1,64,8]),7);
     assert_eq!(positions,vec![[1,2,3],[-1,64,8]]);
@@ -177,7 +218,7 @@ impl Game<'_> {
 #[test] fn mod_registration_and_diagnostic_are_reachable() {
     let mut positions=Vec::new();
     let mut messages=Vec::new();
-    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0, world: World, res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new()};
+    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0, ui: Ui::default(), world: World::default(), res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new()};
     let mut mods=Vec::new();
     game.native_mods(&mut mods);
     assert_eq!(mods.iter().filter(|m| m.id=="wyrd").count(),1);
@@ -198,7 +239,7 @@ impl Game<'_> {
         before = snapshot(original)
         base = ['--workspace', str(original), '--mods', str(root/'mixins')]
         report = json.loads(run([str(cli), 'check', *base, '--out', str(stage), '--trust-native-mods']).stdout)
-        assert report['injections'] == 5 and report['modules'] == 1
+        assert report['injections'] == 7 and report['modules'] == 1
         assert 'test result: ok.' in report['cargo_stdout']
         first = snapshot(stage)
         second = json.loads(run([str(cli), 'check', *base, '--out', str(stage), '--trust-native-mods']).stdout)

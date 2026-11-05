@@ -22,12 +22,20 @@
 // SOFTWARE.
 
 // The pinned game's sole caller reaches this after a successful non-creative break.
-fn remember_mined_deepslate(game: &mut crate::game::Game<'_>, block: &str) {
+fn remember_mined_block(game: &mut crate::game::Game<'_>, block: &str) {
+    use crate::game::wyrd::{
+        self, DEEPSLATE_EFFECT, DEEPSLATE_MEMORY_KEY, IRON_EFFECT, IRON_MEMORY_KEY,
+    };
     use horizon_world::nbt::Tag;
 
-    if block != "minecraft:deepslate" || !game.native_on("wyrd") {
+    if !game.native_on("wyrd") {
         return;
     }
+    let (memory_key, memory_name, effect) = match block {
+        "minecraft:deepslate" => (DEEPSLATE_MEMORY_KEY, "Deepslate Memory", DEEPSLATE_EFFECT),
+        ore if wyrd::is_iron_ore(ore) => (IRON_MEMORY_KEY, "Iron Memory", IRON_EFFECT),
+        _ => return,
+    };
     // Match the selected inventory slot used by Horizon's tool-wear method.
     let Some(stack) = game.inventory[game.selected].as_mut() else {
         return;
@@ -42,7 +50,7 @@ fn remember_mined_deepslate(game: &mut crate::game::Game<'_>, block: &str) {
         Some(Tag::Compound(entries)) => entries.clone(),
         Some(_) => return,
     };
-    let key = crate::game::wyrd::DEEPSLATE_MEMORY_KEY.into();
+    let key = memory_key.into();
     if custom_data.contains_key(&key) {
         return;
     }
@@ -52,7 +60,7 @@ fn remember_mined_deepslate(game: &mut crate::game::Game<'_>, block: &str) {
         Some(Tag::List(lines)) => lines.clone(),
         Some(_) => return,
     };
-    let line = Tag::String("Deepslate Memory".into());
+    let line = Tag::String(memory_name.into());
     if !lore.contains(&line) {
         if lore.len() >= 256 {
             return;
@@ -63,14 +71,15 @@ fn remember_mined_deepslate(game: &mut crate::game::Game<'_>, block: &str) {
     custom_data.insert(key, Tag::Byte(1));
     data.set_other("minecraft:custom_data", Some(Tag::Compound(custom_data)));
     data.set_other("minecraft:lore", Some(Tag::List(lore)));
-    let message = "Deepslate Memory unlocked: +15% mining speed on deepslate";
+    let message = format!("{memory_name} unlocked: {effect}");
     if game.lan_acting.is_some() {
         use horizon_protocol::packets::play::{Clientbound, Text};
         game.guest_packets.push(Clientbound::SetActionBarText(Text {
-            text: Tag::String(message.into()),
+            text: Tag::String(message.as_str().into()),
         }));
     } else {
-        game.titles.set_overlay(horizon_client::text::Text::literal(message), false);
+        game.titles
+            .set_overlay(horizon_client::text::Text::literal(&message), false);
     }
-    log::info!(target: "horizon::wyrd", "[wyrd] Iron pickaxe gained Deepslate Memory");
+    log::info!(target: "horizon::wyrd", "[wyrd] Iron pickaxe gained {memory_name}");
 }

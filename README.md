@@ -4,11 +4,15 @@ A native Rust magic mod for Horizon where your adventures shape your gear.
 Discover item memories, experiment with alchemy, and awaken unique abilities
 through exploration.
 
-**Status: first Item Memory prototype.** In survival, mine deepslate with an
-iron pickaxe to give that pickaxe **Deepslate Memory**. Hover over the item to
-read it. Wyrd writes the memory to the pickaxe's own saved item data. The
-remembered pickaxe mines deepslate 15% faster. A brief message above the hotbar
-announces the first unlock.
+**Status: first Item Memory prototype.** In survival, an iron pickaxe can learn
+both of these memories:
+
+- **Deepslate Memory** makes it mine deepslate 15% faster.
+- **Iron Memory** unlocks by mining either iron ore variant. On later breaks of
+  either variant, it gives a 20% chance for one extra raw iron without Silk Touch.
+
+Memories are saved on the individual pickaxe. Hover over it to see the effects.
+A brief message above the hotbar announces each unlock.
 
 The Mods entry, `/wyrd` diagnostic, and block-break log are available for testing.
 

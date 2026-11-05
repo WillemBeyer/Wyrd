@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Let iron pickaxes learn Iron Memory for a 20% chance of one extra raw iron on later iron ore breaks without Silk Touch.
+- Show the effects of unlocked memories in the pickaxe tooltip.
+
 - Give remembered iron pickaxes 15% faster deepslate mining and announce first unlocks above the hotbar.
 
 - Give the exact iron pickaxe used to mine deepslate a persistent Deepslate Memory and tooltip line.
