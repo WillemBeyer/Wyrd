@@ -23,9 +23,11 @@
 
 fn tunnel_command(game: &mut crate::game::Game<'_>, command: &str, ran: &mut bool) {
     use crate::game::wyrd::{
-        TUNNEL_COOLDOWN_GROUP, TUNNEL_COOLDOWN_TICKS, ore_resource, tunnel_cooldown_seconds,
+        DEEP_DELVER_KEY, TUNNEL_COOLDOWN_GROUP, TUNNEL_COOLDOWN_TICKS, is_eligible_pickaxe,
+        ore_resource, tunnel_cooldown_seconds,
     };
     use horizon_client::text::Text;
+    use horizon_world::nbt::{JavaString, Tag};
     use std::sync::Arc;
 
     // A connected client forwards the command. The integrated server runs it
@@ -40,10 +42,24 @@ fn tunnel_command(game: &mut crate::game::Game<'_>, command: &str, ran: &mut boo
     }
 
     *ran = true;
-    let has_pickaxe = |game: &crate::game::Game<'_>| matches!(game.held(), Some(stack) if stack.item.as_ref() == "minecraft:iron_pickaxe");
-    if game.mode_id() != 0 || !has_pickaxe(game) {
+    let has_deep_delver = |game: &crate::game::Game<'_>| {
+        let Some(stack) = game.held() else {
+            return false;
+        };
+        if !is_eligible_pickaxe(stack.item.as_ref()) {
+            return false;
+        }
+        matches!(
+            stack
+                .data()
+                .and_then(|data| data.other("minecraft:custom_data")),
+            Some(Tag::Compound(data))
+                if data.get(&JavaString::from(DEEP_DELVER_KEY)) == Some(&Tag::Byte(1))
+        )
+    };
+    if game.mode_id() != 0 || !has_deep_delver(game) {
         game.system_message(Text::literal(
-            "Tunnel Break needs an iron pickaxe in Survival.",
+            "Tunnel Break needs a bound Deep Delver pickaxe in Survival.",
         ));
         return;
     }
@@ -122,7 +138,7 @@ fn tunnel_command(game: &mut crate::game::Game<'_>, command: &str, ran: &mut boo
             break;
         }
         for ([x, y, z], state) in matching {
-            if !has_pickaxe(game) || game.world.block(x, y, z) != state {
+            if !has_deep_delver(game) || game.world.block(x, y, z) != state {
                 break 'tunnel;
             }
             let result = game.break_block([x, y, z]);

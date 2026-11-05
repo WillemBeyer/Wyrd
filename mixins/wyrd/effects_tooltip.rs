@@ -22,44 +22,53 @@
 // SOFTWARE.
 
 fn show_memory_effects(
-    mut lines: Vec<(horizon_client::text::Text, u32)>,
+    mut after_name: Vec<(horizon_client::text::Text, u32)>,
     game: &crate::game::Game<'_>,
     stack: &crate::game::ItemStack,
 ) -> Vec<(horizon_client::text::Text, u32)> {
     use crate::game::wyrd::{
-        DEEPSLATE_EFFECT, DEEPSLATE_MEMORY_KEY, ORE_EFFECT, ORE_MEMORY_KEY, TUNNEL_COOLDOWN_GROUP,
+        DEEP_DELVER_KEY, DEEPSLATE_EFFECT, DEEPSLATE_MEMORY_KEY, ORE_EFFECT, ORE_MEMORY_KEY,
+        TUNNEL_COOLDOWN_GROUP, TUNNEL_DEFAULT_KEY, TUNNEL_KEY_NAME, is_eligible_pickaxe,
         tunnel_cooldown_seconds,
     };
     use horizon_client::text::Text;
     use horizon_world::nbt::{JavaString, Tag};
 
-    if lines.is_empty()
-        || !game.native_on("wyrd")
-        || stack.item.as_ref() != "minecraft:iron_pickaxe"
-    {
-        return lines;
+    if !game.native_on("wyrd") || !is_eligible_pickaxe(stack.item.as_ref()) {
+        return after_name;
     }
-    if let Some(Tag::Compound(data)) = stack
+    let custom_data = stack
         .data()
-        .and_then(|data| data.other("minecraft:custom_data"))
-    {
+        .and_then(|data| data.other("minecraft:custom_data"));
+    let bound = matches!(
+        custom_data,
+        Some(Tag::Compound(data))
+            if data.get(&JavaString::from(DEEP_DELVER_KEY)) == Some(&Tag::Byte(1))
+    );
+    if let Some(Tag::Compound(data)) = custom_data {
         for (key, effect) in [
             (DEEPSLATE_MEMORY_KEY, DEEPSLATE_EFFECT),
             (ORE_MEMORY_KEY, ORE_EFFECT),
         ] {
             if data.get(&JavaString::from(key)) == Some(&Tag::Byte(1)) {
-                lines.push((Text::literal(&format!("Effect: {effect}")), u32::MAX));
+                after_name.push((Text::literal(&format!("Effect: {effect}")), u32::MAX));
             }
         }
     }
+    if !bound {
+        return after_name;
+    }
+    after_name.push((Text::literal("Deep Delver"), u32::MAX));
     if game.has_singleplayer_server() {
+        let key = game.native_mod_key("wyrd", TUNNEL_KEY_NAME, TUNNEL_DEFAULT_KEY);
+        let label = horizon_client::keybinds::display_name(&key).plain();
         let remaining = tunnel_cooldown_seconds(game.cooldowns.percent(TUNNEL_COOLDOWN_GROUP, 0.0));
         let status = if remaining == 0 {
-            "Tunnel Break: Ready (/wyrd tunnel)".to_owned()
+            format!("Tunnel Break: Ready ({label})")
         } else {
-            format!("Tunnel Break: {remaining}s cooldown")
+            format!("Tunnel Break: {remaining}s cooldown ({label})")
         };
-        lines.push((Text::literal(&status), u32::MAX));
+        after_name.push((Text::literal(&status), u32::MAX));
     }
-    lines
+    after_name
 }

@@ -28,11 +28,53 @@ pub const DEEPSLATE_MEMORY_KEY: &str = "wyrd:deepslate_memory";
 pub const DEEPSLATE_SPEED_MULTIPLIER: f32 = 1.15;
 pub const ORE_MEMORY_KEY: &str = "wyrd:ore_memory";
 pub const ORE_BONUS_CHANCE: f32 = 0.10;
+pub const DEEP_DELVER_KEY: &str = "wyrd:deep_delver";
 pub const TUNNEL_COOLDOWN_GROUP: &str = "wyrd:tunnel_break";
 pub const TUNNEL_COOLDOWN_TICKS: i32 = 600;
+pub const TUNNEL_KEY_NAME: &str = "tunnel_break";
+pub const TUNNEL_KEY_LABEL: &str = "Tunnel Break";
+pub const TUNNEL_DEFAULT_KEY: &str = "key.keyboard.v";
 
 pub const DEEPSLATE_EFFECT: &str = "+15% mining speed on deepslate";
 pub const ORE_EFFECT: &str = "10% chance for +1 ore drop (no Silk Touch)";
+
+pub fn is_eligible_pickaxe(item: &str) -> bool {
+    matches!(
+        item,
+        "minecraft:iron_pickaxe" | "minecraft:diamond_pickaxe" | "minecraft:netherite_pickaxe"
+    )
+}
+
+mod boost_flags {
+    #![allow(clippy::missing_const_for_thread_local)]
+
+    thread_local! {
+        pub static DEEPSLATE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+        pub static ORE_RESOURCE: std::cell::Cell<Option<([i32; 3], &'static str)>> =
+            const { std::cell::Cell::new(None) };
+    }
+}
+
+pub fn set_deepslate_boost(active: bool) {
+    boost_flags::DEEPSLATE.set(active);
+}
+
+pub fn take_deepslate_boost() -> bool {
+    boost_flags::DEEPSLATE.replace(false)
+}
+
+pub fn set_ore_bonus_resource(pos: [i32; 3], resource: Option<&'static str>) {
+    boost_flags::ORE_RESOURCE.set(resource.map(|resource| (pos, resource)));
+}
+
+pub fn take_ore_bonus_resource(pos: [i32; 3], item: &str) -> Option<&'static str> {
+    let (expected_pos, resource) = boost_flags::ORE_RESOURCE.get()?;
+    if expected_pos != pos || resource != item {
+        return None;
+    }
+    boost_flags::ORE_RESOURCE.set(None);
+    Some(resource)
+}
 
 pub fn ore_resource(block: &str) -> Option<&'static str> {
     let ore = block.strip_prefix("minecraft:")?;
@@ -70,6 +112,43 @@ pub fn before_break(pos: [i32; 3]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn eligible_pickaxe_tiers_share_the_deep_delver_rule() {
+        for item in [
+            "minecraft:iron_pickaxe",
+            "minecraft:diamond_pickaxe",
+            "minecraft:netherite_pickaxe",
+        ] {
+            assert!(is_eligible_pickaxe(item), "{item}");
+        }
+        for item in [
+            "minecraft:stone_pickaxe",
+            "minecraft:golden_pickaxe",
+            "minecraft:wooden_pickaxe",
+            "minecraft:iron_axe",
+            "minecraft:air",
+        ] {
+            assert!(!is_eligible_pickaxe(item), "{item}");
+        }
+    }
+
+    #[test]
+    fn deepslate_boost_is_consumed_once() {
+        set_deepslate_boost(true);
+        assert!(take_deepslate_boost());
+        assert!(!take_deepslate_boost());
+    }
+
+    #[test]
+    fn ore_bonus_resource_is_consumed_once() {
+        set_ore_bonus_resource([0; 3], Some("minecraft:raw_iron"));
+        assert_eq!(
+            take_ore_bonus_resource([0; 3], "minecraft:raw_iron"),
+            Some("minecraft:raw_iron")
+        );
+        assert_eq!(take_ore_bonus_resource([0; 3], "minecraft:raw_iron"), None);
+    }
 
     #[test]
     fn message_preserves_signed_block_coordinates() {

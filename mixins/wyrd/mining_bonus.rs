@@ -21,31 +21,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Both the local prediction and the integrated server use this progress value.
-fn boost_deepslate_progress(progress: f32, game: &crate::game::Game<'_>, pos: [i32; 3]) -> f32 {
-    use crate::game::wyrd::{DEEPSLATE_MEMORY_KEY, DEEPSLATE_SPEED_MULTIPLIER};
-    use horizon_world::nbt::Tag;
+fn boost_deepslate_progress(progress: f32, game: &crate::game::Game<'_>) -> f32 {
+    use crate::game::wyrd::{DEEPSLATE_SPEED_MULTIPLIER, take_deepslate_boost};
 
-    if progress <= 0.0 || !progress.is_finite() || !game.native_on("wyrd") {
+    let boosted = take_deepslate_boost();
+    if progress <= 0.0 || !progress.is_finite() || !game.native_on("wyrd") || !boosted {
         return progress;
     }
-    let Some(stack) = game.held() else {
-        return progress;
-    };
-    if stack.item.as_ref() != "minecraft:iron_pickaxe" {
-        return progress;
-    }
-    let Some(Tag::Compound(data)) = stack.data().and_then(|data| data.other("minecraft:custom_data")) else {
-        return progress;
-    };
-    let key = horizon_world::nbt::JavaString::from(DEEPSLATE_MEMORY_KEY);
-    if data.get(&key) != Some(&Tag::Byte(1)) {
-        return progress;
-    }
-    let state = game.world.block(pos[0], pos[1], pos[2]);
-    if game.res.facts().get(state).name.as_ref() == "minecraft:deepslate" {
-        progress * DEEPSLATE_SPEED_MULTIPLIER
-    } else {
-        progress
-    }
+    progress * DEEPSLATE_SPEED_MULTIPLIER
 }

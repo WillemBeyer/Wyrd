@@ -74,41 +74,66 @@ bindings = [
 ]
 
 [[injection]]
+id = "deepslate-mining-scan"
+kind = "HEAD"
+target = "horizon_client::game::hand::Game<'_>::destroy_progress"
+helper = "deepslate_scan.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
+  { name = "pos", ty = "[i32;3]", value = "pos" },
+]
+
+[[injection]]
+id = "deepslate-mining-tick-scan"
+kind = "HEAD"
+target = "horizon_client::game::Game<'_>::tick_mining"
+helper = "deepslate_tick_scan.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
+]
+
+[[injection]]
 id = "deepslate-mining-progress"
 kind = "RETURN"
-target = "horizon_client::game::hand::Game<'_>::destroy_progress"
+target = "horizon_client::game::enchant_effects::Game<'_>::modify_destroy_speed"
 helper = "mining_bonus.rs"
 bindings = [
   { name = "progress", ty = "f32", value = "$value" },
   { name = "game", ty = "&crate::game::Game<'_>", value = "self" },
+]
+
+[[injection]]
+id = "ore-bonus-scan"
+kind = "HEAD"
+target = "horizon_client::game::Game<'_>::break_block_as_player"
+helper = "ore_bonus_scan.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
   { name = "pos", ty = "[i32;3]", value = "pos" },
 ]
 
 [[injection]]
 id = "ore-memory-drop"
-kind = "MODIFY_VARIABLE"
-target = "horizon_client::game::Game<'_>::break_block_as_player"
-variable = { name = "drops", ordinal = 0, at = "STORE" }
-require = 1
-ordinal = 0
+kind = "HEAD"
+target = "horizon_client::game::Game<'_>::pop_resource"
 helper = "ore_bonus.rs"
 bindings = [
-  { name = "drops", ty = "Vec<ItemStack>", value = "$value" },
   { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
-  { name = "state", ty = "BlockStateId", value = "$local:state:1" },
-  { name = "held", ty = "&Option<ItemStack>", value = "$local_ref:held:0" },
+  { name = "pos", ty = "[i32;3]", value = "pos" },
+  { name = "stack", ty = "&crate::game::ItemStack", value = "&stack" },
 ]
 
 [[injection]]
 id = "pickaxe-memory-effects"
-kind = "MODIFY_VARIABLE"
-target = "horizon_client::game::stations::Game<'_>::draw_stack_tooltip_with"
-variable = { name = "lines", ordinal = 0, at = "STORE" }
+kind = "MODIFY_ARG"
+target = "horizon_client::game::stations::Game<'_>::draw_stack_tooltip"
+selector = "self.draw_stack_tooltip_with"
 require = 1
 ordinal = 0
+argument = 5
 helper = "effects_tooltip.rs"
 bindings = [
-  { name = "lines", ty = "Vec<(horizon_client::text::Text, u32)>", value = "$value" },
+  { name = "after_name", ty = "Vec<(horizon_client::text::Text, u32)>", value = "$value" },
   { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
   { name = "stack", ty = "&crate::game::ItemStack", value = "stack" },
 ]
@@ -132,4 +157,25 @@ bindings = [
   { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
   { name = "command", ty = "&str", value = "command" },
   { name = "ran", ty = "&mut bool", value = "&mut *ran" },
+]
+
+[[injection]]
+id = "deep-delver-binding"
+kind = "HEAD"
+target = "horizon_client::game::Game<'_>::use_hand"
+helper = "binding.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "hit", ty = "Option<&crate::game::Hit>", value = "block_hit" },
+]
+
+[[injection]]
+id = "tunnel-keybind"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_key"
+helper = "keybind.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "key", ty = "&str", value = "key" },
+  { name = "pressed", ty = "bool", value = "pressed" },
 ]

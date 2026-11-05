@@ -41,7 +41,9 @@ class PackageTests(unittest.TestCase):
                 'mixins/wyrd/list.rs', 'mixins/wyrd/command.rs',
                 'mixins/wyrd/memory.rs', 'mixins/wyrd/mining_bonus.rs',
                 'mixins/wyrd/ore_bonus.rs', 'mixins/wyrd/effects_tooltip.rs', 'mixins/wyrd/tunnel.rs',
-                'mixins/wyrd/sync_memory.rs',
+                'mixins/wyrd/sync_memory.rs', 'mixins/wyrd/binding.rs', 'mixins/wyrd/keybind.rs',
+                'mixins/wyrd/deepslate_scan.rs', 'mixins/wyrd/deepslate_tick_scan.rs',
+                'mixins/wyrd/ore_bonus_scan.rs',
             })
             manifest = json.loads(archive.read('horizon-native.json'))
             self.assertEqual(manifest['id'], 'wyrd')

@@ -20,6 +20,30 @@ fn canonical(items: &[Item]) -> String {
         items: items.to_vec(),
     })
 }
+
+struct CompareShape;
+
+impl VisitMut for CompareShape {
+    fn visit_expr_mut(&mut self, expr: &mut Expr) {
+        syn::visit_mut::visit_expr_mut(self, expr);
+        loop {
+            match expr {
+                Expr::Paren(paren) if paren.attrs.is_empty() => {
+                    *expr = (*paren.expr).clone();
+                }
+                Expr::Block(block)
+                    if block.attrs.is_empty()
+                        && block.label.is_none()
+                        && block.block.stmts.len() == 1
+                        && let syn::Stmt::Expr(inner, None) = &block.block.stmts[0] =>
+                {
+                    *expr = inner.clone();
+                }
+                _ => break,
+            }
+        }
+    }
+}
 struct ValueAudit<'a> {
     helper: &'a syn::ItemFn,
     bindings: &'a [serde_json::Value],
@@ -92,7 +116,7 @@ fn main() {
             .collect();
         assert_eq!(p["cancellable"], false);
         let helper: syn::ItemFn = syn::parse_str(p["helper_source"].as_str().unwrap()).unwrap();
-        if p["kind"] == "RETURN" || p["kind"] == "MODIFY_VARIABLE" {
+        if p["kind"] == "RETURN" || p["kind"] == "MODIFY_VARIABLE" || p["kind"] == "MODIFY_ARG" {
             let mut audit = ValueAudit {
                 helper: &helper,
                 bindings: p["bindings"].as_array().unwrap(),
@@ -144,12 +168,25 @@ fn main() {
         );
     }
     for (file, tree) in trees {
-        let original =
+        let mut original =
             syn::parse_file(&fs::read_to_string(Path::new(&args[1]).join(file)).unwrap()).unwrap();
-        assert!(
-            prettyplease::unparse(&original) == prettyplease::unparse(&tree),
-            "unexpected source change in {file}"
-        );
+        CompareShape.visit_file_mut(&mut original);
+        let mut tree = tree;
+        CompareShape.visit_file_mut(&mut tree);
+        let before = prettyplease::unparse(&original);
+        let after = prettyplease::unparse(&tree);
+        if before != after {
+            for (index, (before, after)) in before.lines().zip(after.lines()).enumerate() {
+                if before != after {
+                    eprintln!(
+                        "first difference in {file} at line {}:\n  before: {before}\n  after:  {after}",
+                        index + 1
+                    );
+                    break;
+                }
+            }
+            panic!("unexpected source change in {file}");
+        }
     }
     println!("all original ASTs preserved apart from the planned hooks and support module");
 }

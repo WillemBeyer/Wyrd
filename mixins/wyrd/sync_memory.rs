@@ -24,13 +24,14 @@
 // The integrated server sends inventory through this encoder. Preserve Wyrd
 // memory markers and lore so the client can render the pickaxe's tooltip.
 fn sync_pickaxe_memory(mut network: Option<Stack>, local: &Option<ItemStack>) -> Option<Stack> {
+    use crate::game::wyrd::is_eligible_pickaxe;
     use horizon_protocol::item::{Component, component};
     use horizon_world::nbt::Tag;
 
     let (Some(network_stack), Some(local_stack)) = (&mut network, local) else {
         return network;
     };
-    if local_stack.item.as_ref() != "minecraft:iron_pickaxe" {
+    if !is_eligible_pickaxe(local_stack.item.as_ref()) {
         return network;
     }
     let Some(data) = local_stack.data() else {

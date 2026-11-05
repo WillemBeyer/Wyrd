@@ -23,11 +23,19 @@
 
 // Native code bundles do not automatically add their own Mods menu row.
 fn list(mods: &mut Vec<crate::game::native_hooks::NativeMod>) {
+    use crate::game::wyrd::{TUNNEL_DEFAULT_KEY, TUNNEL_KEY_LABEL, TUNNEL_KEY_NAME};
+
     mods.push(crate::game::native_hooks::NativeMod {
         id: "wyrd".into(),
         title: "Wyrd 0.1.0".into(),
-        description: "Native development scaffold. Use /wyrd to check it is running.".into(),
-        keys: Vec::new(),
+        description:
+            "Bind a pickaxe at an enchanting table, then press the Tunnel Break key while playing."
+                .into(),
+        keys: vec![[
+            TUNNEL_KEY_NAME.into(),
+            TUNNEL_KEY_LABEL.into(),
+            TUNNEL_DEFAULT_KEY.into(),
+        ]],
     });
     log::info!(target: "horizon::wyrd", "[wyrd] Native scaffold loaded (0.1.0)");
 }

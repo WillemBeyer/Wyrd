@@ -21,47 +21,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// The held snapshot predates the memory awarded on the current break.
-// The original loot vector already contains vanilla's Fortune results.
 fn add_ore_memory_drop(
-    mut drops: Vec<ItemStack>,
     game: &mut crate::game::Game<'_>,
-    state: BlockStateId,
-    held: &Option<ItemStack>,
-) -> Vec<ItemStack> {
-    use crate::game::wyrd::{ORE_BONUS_CHANCE, ORE_MEMORY_KEY, ore_resource};
-    use horizon_world::nbt::{JavaString, Tag};
+    pos: [i32; 3],
+    stack: &crate::game::ItemStack,
+) {
+    use crate::game::wyrd::{ORE_BONUS_CHANCE, take_ore_bonus_resource};
 
-    let Some(stack) = held else {
-        return drops;
-    };
-    if !game.native_on("wyrd")
-        || !game.ui.rules.bool("block_drops")
-        || stack.item.as_ref() != "minecraft:iron_pickaxe"
-        || stack.enchantment_level("minecraft:silk_touch") > 0
-    {
-        return drops;
+    // Only drops from the active player break can spend the bonus.
+    if game.lan_break_pos != Some(pos) || stack.count == 0 {
+        return;
     }
-
-    let Some(resource) = ore_resource(game.res.facts().get(state).name.as_ref()) else {
-        return drops;
+    let Some(resource) = take_ore_bonus_resource(pos, stack.item.as_ref()) else {
+        return;
     };
-    if !drops
-        .iter()
-        .any(|drop| drop.item.as_ref() == resource && drop.count > 0)
-    {
-        return drops;
+    if game.world.random.next_float() < ORE_BONUS_CHANCE {
+        game.pop_resource(pos, ItemStack::new(resource, 1));
     }
-    let Some(Tag::Compound(data)) = stack
-        .data()
-        .and_then(|data| data.other("minecraft:custom_data"))
-    else {
-        return drops;
-    };
-    if data.get(&JavaString::from(ORE_MEMORY_KEY)) == Some(&Tag::Byte(1))
-        && game.world.random.next_float() < ORE_BONUS_CHANCE
-    {
-        drops.push(ItemStack::new(resource, 1));
-    }
-    drops
 }

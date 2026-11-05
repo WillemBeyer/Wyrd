@@ -43,16 +43,31 @@ def main():
 extern crate self as horizon_world;
 extern crate self as horizon_protocol;
 extern crate self as horizon_client;
+extern crate self as winit;
+pub mod first_person {
+    #[derive(PartialEq, Eq)]
+    pub enum Hand { Main, Off }
+}
+pub mod keyboard {
+    #[derive(PartialEq, Eq)]
+    pub enum KeyCode { ShiftLeft }
+}
+pub mod keybinds {
+    pub fn display_name(key: &str) -> crate::text::Text { crate::text::Text::literal(key) }
+}
 pub mod text {
     pub struct Text(pub String);
     impl Text {
         pub fn literal(text: &str) -> Self { Self(text.into()) }
+        pub fn plain(&self) -> String { self.0.clone() }
     }
 }
 pub mod packets {
     pub mod play {
         pub struct Text { pub text: crate::nbt::Tag }
         pub enum Clientbound { SetActionBarText(Text) }
+        pub struct ChatCommand { pub command: String }
+        pub enum Serverbound { ChatCommand(ChatCommand) }
     }
 }
 pub mod game;
@@ -104,6 +119,12 @@ impl Game<'_> {
     }
     pub fn native_command(&mut self, command: &str, ran: &mut bool) { let _ = (command, ran); }
     pub fn native_on(&self, _: &str) -> bool { true }
+    fn native_key(&mut self, key: &str, pressed: bool) { let _ = (key, pressed); }
+    pub(super) fn native_playing(&self) -> bool { true }
+    pub(super) fn native_window(&self) -> bool { true }
+    pub(super) fn native_mod_key(&self, _: &str, _: &str, default: &str) -> String {
+        default.to_owned()
+    }
     pub fn native_chat(&mut self, text: &str) { self.messages.push(text.to_owned()); }
 }
 ''')
@@ -112,28 +133,34 @@ use super::Game;
 impl Game<'_> {
     fn destroy_progress(&self, pos: [i32; 3]) -> f32 {
         if pos[1] < 0 { return 0.0; }
-        0.1
+        self.modify_destroy_speed(0.1)
     }
+}
+''')
+        (original/'crates/horizon-client/src/game/enchant_effects.rs').write_text('''
+use super::Game;
+impl Game<'_> {
+    pub(super) fn modify_destroy_speed(&self, speed: f32) -> f32 { speed }
 }
 ''')
         (original/'crates/horizon-client/src/game/stations.rs').write_text('''
 use super::{Game, ItemStack};
 impl Game<'_> {
-    fn draw_stack_tooltip_with(&mut self, stack: &ItemStack, creative: bool) {
-        let mut lines = self.stack_tooltip_lines(stack, false, creative);
-        lines.clear();
+    fn draw_stack_tooltip(&mut self, batch: &mut (), stack: &ItemStack, x: f32, y: f32) {
+        self.draw_stack_tooltip_with(batch, stack, false, x, y, Vec::new());
     }
-    fn stack_tooltip_lines(
-        &self, stack: &ItemStack, nested: bool, creative: bool,
-    ) -> Vec<(crate::text::Text, u32)> {
-        let _ = (stack, nested, creative);
-        Vec::new()
+    fn draw_stack_tooltip_with(
+        &mut self, batch: &mut (), stack: &ItemStack, creative: bool,
+        x: f32, y: f32, after_name: Vec<(crate::text::Text, u32)>,
+    ) {
+        let _ = (batch, stack, creative, x, y, after_name);
     }
 }
 ''')
         (original/'crates/horizon-client/src/game.rs').write_text('''
 pub mod native_hooks;
 pub mod hand;
+pub mod enchant_effects;
 pub mod stations;
 use crate::nbt::Tag;
 #[derive(Default)]
@@ -203,10 +230,16 @@ impl Border {
 struct Hub { singleplayer_owner: Option<u128> }
 struct Lan { hub: Hub }
 struct Hit { pos: [i32; 3], face: [i32; 3] }
+struct Serving { owner: u128 }
+#[derive(PartialEq, Eq)]
+enum Screen { Playing }
 pub struct Game<'a> {
     pub positions: &'a mut Vec<[i32;3]>, pub messages: &'a mut Vec<String>,
     inventory: [Option<Stack>; 2], selected: usize, wear_calls: usize,
     remote: Option<()>, lan: Option<Lan>, lan_acting_uuid: Option<u128>,
+    serving: Option<Serving>, offhand: Option<ItemStack>, hand: crate::first_person::Hand,
+    keys: Vec<crate::keyboard::KeyCode>, lan_break_pos: Option<[i32; 3]>,
+    left: bool, creative: bool, screen: Screen,
     cooldowns: Cooldowns, guest_cooldowns: Vec<(Arc<str>, i32)>, border: Border,
     ui: Ui, world: World, res: Resources, titles: Titles, lan_acting: Option<u32>,
     guest_packets: Vec<crate::packets::play::Clientbound>,
@@ -221,9 +254,22 @@ impl Game<'_> {
         let state = self.world.block(pos[0], pos[1], pos[2]);
         let state = state;
         let held = self.held().cloned();
-        let drops = self.block_loot_at(pos, state, held.as_ref());
-        let _ = drops;
+        for stack in self.block_loot_at(pos, state, held.as_ref()) {
+            self.pop_resource(pos, stack);
+        }
     }
+    fn pop_resource(&mut self, pos: [i32; 3], mut stack: ItemStack) {
+        stack.count += 1;
+        let _ = (pos, stack);
+    }
+    fn use_hand(&mut self, block_hit: Option<&Hit>) -> Result<bool, ()> {
+        let _ = block_hit;
+        Ok(false)
+    }
+    fn tick_mining(&mut self) -> Result<(), ()> { Ok(()) }
+    fn pick(&self) -> Option<Hit> { None }
+    fn run_command(&mut self, _: &str) -> bool { true }
+    fn send(&mut self, _: crate::packets::play::Serverbound) {}
     fn mode_id(&self) -> i32 { 0 }
     fn has_singleplayer_server(&self) -> bool { true }
     fn aim(&self) -> Option<([f64; 3], [f64; 3])> { None }
@@ -246,7 +292,9 @@ impl Game<'_> {
     let mut messages = Vec::new();
     let pickaxe = || Some(Stack::new("minecraft:iron_pickaxe", 1));
     let mut game = Game { positions: &mut positions, messages: &mut messages,
-        inventory: [pickaxe(), pickaxe()], selected: 1, wear_calls: 0, ui: Ui::default(), world: World::default(), res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new(), remote: None, lan: None, lan_acting_uuid: None, cooldowns: Cooldowns, guest_cooldowns: Vec::new(), border: Border };
+        inventory: [pickaxe(), pickaxe()], selected: 1, wear_calls: 0, ui: Ui::default(), world: World::default(), res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new(), remote: None, lan: None, lan_acting_uuid: None,
+        serving: None, offhand: None, hand: crate::first_person::Hand::Main,
+        keys: Vec::new(), lan_break_pos: None, left: false, creative: false, screen: Screen::Playing, cooldowns: Cooldowns, guest_cooldowns: Vec::new(), border: Border };
     let unrelated = Tag::Byte(9);
     let original_lore = Tag::String("Existing line".into());
     let data = game.inventory[1].as_mut().unwrap().data_mut();
@@ -271,7 +319,9 @@ impl Game<'_> {
 #[test] fn original_body_and_result_are_preserved() {
     let mut positions=Vec::new();
     let mut messages=Vec::new();
-    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0, ui: Ui::default(), world: World::default(), res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new(), remote: None, lan: None, lan_acting_uuid: None, cooldowns: Cooldowns, guest_cooldowns: Vec::new(), border: Border};
+    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0, ui: Ui::default(), world: World::default(), res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new(), remote: None, lan: None, lan_acting_uuid: None,
+        serving: None, offhand: None, hand: crate::first_person::Hand::Main,
+        keys: Vec::new(), lan_break_pos: None, left: false, creative: false, screen: Screen::Playing, cooldowns: Cooldowns, guest_cooldowns: Vec::new(), border: Border};
     assert_eq!(game.break_block([1,2,3]),Ok(7));
     assert_eq!(game.break_block([-1,64,8]),Ok(7));
     assert_eq!(positions,vec![[1,2,3],[-1,64,8]]);
@@ -279,7 +329,9 @@ impl Game<'_> {
 #[test] fn mod_registration_and_diagnostic_are_reachable() {
     let mut positions=Vec::new();
     let mut messages=Vec::new();
-    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0, ui: Ui::default(), world: World::default(), res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new(), remote: None, lan: None, lan_acting_uuid: None, cooldowns: Cooldowns, guest_cooldowns: Vec::new(), border: Border};
+    let mut game=Game {positions:&mut positions, messages:&mut messages, inventory:[None, None], selected:0, wear_calls:0, ui: Ui::default(), world: World::default(), res: Resources, titles: Titles, lan_acting: None, guest_packets: Vec::new(), remote: None, lan: None, lan_acting_uuid: None,
+        serving: None, offhand: None, hand: crate::first_person::Hand::Main,
+        keys: Vec::new(), lan_break_pos: None, left: false, creative: false, screen: Screen::Playing, cooldowns: Cooldowns, guest_cooldowns: Vec::new(), border: Border};
     let mut mods=Vec::new();
     game.native_mods(&mut mods);
     assert_eq!(mods.iter().filter(|m| m.id=="wyrd").count(),1);
@@ -300,7 +352,7 @@ impl Game<'_> {
         before = snapshot(original)
         base = ['--workspace', str(original), '--mods', str(root/'mixins')]
         report = json.loads(run([str(cli), 'check', *base, '--out', str(stage), '--trust-native-mods']).stdout)
-        assert report['injections'] == 9 and report['modules'] == 1
+        assert report['injections'] == 14 and report['modules'] == 1
         assert 'test result: ok.' in report['cargo_stdout']
         first = snapshot(stage)
         second = json.loads(run([str(cli), 'check', *base, '--out', str(stage), '--trust-native-mods']).stdout)

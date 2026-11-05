@@ -77,6 +77,43 @@ This verifies native loading, registration, diagnostics and a break-attempt hook
 it does not implement or validate item memory, magic, or compatibility with a
 different Horizon source revision.
 
+## Deep Delver binding prototype - 2026-11-05
+
+- Added the Deep Delver enchanting-table recipe, one-marker custom-data binding,
+  bound-pickaxe Tunnel Break gate, configurable keybind (default V), and the
+  diamond/netherite tier extension across memories, bonuses, sync and tooltips.
+- Standalone Windows checks: `cargo fmt --all --check`, `cargo check
+  --workspace --all-targets --locked --offline` and `cargo clippy
+  --workspace --all-targets --locked --offline -- -D warnings` passed. These
+  checks cover the runtime library, not the injected mixin source.
+- Pinned-source audit: built the pinned Horizon Mixins CLI at
+  `d9c83d7096b7ea5b83678da2efdfd6161f74997e` and ran `plan`/`apply` against the
+  pinned Horizon source at `ba6344a59cb9e755b730dcf02285fc0d33b97d3c`.
+  The plan contains 14 injections and one module; both commands returned
+  `"status": "ok"`. The staged source was inspected around each generated call.
+- Repo source audit: `native-mod-source-audit` passed on the same plan/stage
+  after adding MODIFY_ARG support and normalizing the pinned printer's
+  single-expression block/paren shapes. Result:
+  `all original ASTs preserved apart from the planned hooks and support module`.
+- Pinned-source limitation found: the mixin validator rejects non-HEAD
+  injections into functions whose pristine bodies contain closures. At this pin,
+  `Game::destroy_progress` has `self.player.as_ref().is_some_and(|p| ...)`,
+  `break_block_as_player` and `draw_stack_tooltip_with` contain closures, and
+  `block_loot_at` contains macros the auditor cannot resolve. The existing
+  Deepslate/Ore/tooltip hooks were retargeted to HEAD/MODIFY_ARG/RETURN sites as
+  described in `docs/decisions/0002-deep-delver-binding.md`; the new interaction
+  and keypress use supported HEAD hooks.
+- Full staged `cargo check` did not complete on this Windows host: `ring`'s build
+  script requires `gcc.exe`, and no Windows C compiler is installed. This is an
+  environment limitation, not a reported source error. The Linux staging check
+  and the in-game playtest remain to be run by the project owner.
+
+- Integration review updated the fixtures and package inventory for all 14
+  hooks. Compile-only fixture checks, the fixture audit, pinned Horizon source
+  staging and audit, and source packaging passed. The ore bonus now requires
+  a matching drop at the active player break position. No game was launched.
+
+
 ## Windows normal-startup stack-overflow workaround — 2026-11-04
 
 - User reported Windows status 0xc00000fd / main stack overflow when the pinned dev-profile game started normally, before Wyrd registration. The earlier world-direct smoke test missed that path.

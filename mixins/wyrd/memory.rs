@@ -25,6 +25,7 @@
 fn remember_mined_block(game: &mut crate::game::Game<'_>, block: &str) {
     use crate::game::wyrd::{
         self, DEEPSLATE_EFFECT, DEEPSLATE_MEMORY_KEY, ORE_EFFECT, ORE_MEMORY_KEY,
+        is_eligible_pickaxe,
     };
     use horizon_world::nbt::Tag;
 
@@ -44,7 +45,7 @@ fn remember_mined_block(game: &mut crate::game::Game<'_>, block: &str) {
     let Some(stack) = game.inventory[game.selected].as_mut() else {
         return;
     };
-    if stack.item.as_ref() != "minecraft:iron_pickaxe" {
+    if !is_eligible_pickaxe(stack.item.as_ref()) {
         return;
     }
 
@@ -85,5 +86,5 @@ fn remember_mined_block(game: &mut crate::game::Game<'_>, block: &str) {
         game.titles
             .set_overlay(horizon_client::text::Text::literal(&message), false);
     }
-    log::info!(target: "horizon::wyrd", "[wyrd] Iron pickaxe gained {memory_name}");
+    log::info!(target: "horizon::wyrd", "[wyrd] Pickaxe gained {memory_name}");
 }

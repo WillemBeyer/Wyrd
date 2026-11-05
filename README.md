@@ -4,22 +4,29 @@ A native Rust magic mod for Horizon where your adventures shape your gear.
 Discover item memories, experiment with alchemy, and awaken unique abilities
 through exploration.
 
-**Status: first Item Memory prototype.** In survival, an iron pickaxe can learn
-both of these memories:
+**Status: first Deep Delver prototype.** In survival, iron, diamond and
+netherite pickaxes can learn both of these memories:
 
 - **Deepslate Memory** makes it mine deepslate 15% faster.
 - **Ore Memory** unlocks on the first successful harvest of a supported ore.
   Later ore breaks give a 10% chance of one extra normal resource drop after
   Fortune. Silk Touch skips the bonus.
 
-Memories are saved on the individual pickaxe. Hover over it to see the effects.
-A brief message above the hotbar announces each unlock.
+Memories are saved on the individual pickaxe. Hover over the pickaxe to see its
+effects. A brief message above the hotbar announces each unlock.
 
-In a singleplayer survival world, hold an iron pickaxe, aim at the side of
-common stone at head height, and run `/wyrd tunnel`. This prototype mines
-matching stone in a 3×3 area up to six blocks deep using normal durability.
-It stops before a slice containing ore or another obstruction. The tooltip
-shows the 30-second cooldown. Any iron pickaxe can use the prototype ability.
+In a singleplayer survival world, sneak-use an enchanting table while holding
+an eligible pickaxe with both memories in the main hand and an amethyst shard
+in the offhand. The table binds that pickaxe as **Deep Delver**, consumes
+exactly one shard, and stores the binding on the pickaxe. The binding survives
+inventory sync and relogging, and failed attempts consume nothing.
+
+Once bound, press the **Tunnel Break** key while playing. The default is **V**;
+rebind it on the Wyrd page in Options > Mods. Tunnel Break mines matching stone in a 3x3
+area up to six blocks deep using normal durability and drops. It stops before a
+slice containing ore or another obstruction and has a 30-second cooldown. The
+tooltip shows the binding, the current key and the remaining cooldown. Unbound
+pickaxes cannot use the ability.
 
 The Mods entry, `/wyrd` diagnostic, and block-break log are available for testing.
 
@@ -67,11 +74,14 @@ permissions. Build and play it only in a dedicated development instance/world.
 ## Repository layout
 
 ```text
-mixins/wyrd/horizon-mixin.toml  Native manifest and the exact source target
+mixins/wyrd/horizon-mixin.toml  Native manifest and the exact source targets
 mixins/wyrd/break.rs            Block-break diagnostic
 mixins/wyrd/memory.rs           Confirmed survival mining and pickaxe memory
 mixins/wyrd/ore_bonus.rs        Bonus resources after vanilla ore drops
-mixins/wyrd/tunnel.rs           Server-authoritative tunnel prototype
+mixins/wyrd/binding.rs          Enchanting-table Deep Delver binding
+mixins/wyrd/keybind.rs          Tunnel Break native key handler
+mixins/wyrd/tunnel.rs           Server-authoritative Tunnel Break
+mixins/wyrd/effects_tooltip.rs  Memory and Deep Delver tooltip lines
 mixins/wyrd/runtime.rs          Shared testable Rust library and injected module
 compatibility.json             Pinned upstream versions and source hash
 tools/horizon.py               Export, plan/apply, check and build (Linux)

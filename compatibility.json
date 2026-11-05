@@ -5,7 +5,8 @@
     "crates/horizon-client/src/game/native_hooks.rs": "5c14b157eab2d0d63c4a9327e39e93149c371bcf0fb99edf03b452183e243d6b",
     "crates/horizon-client/src/game/hand.rs": "d737a9d557062e4e915cedc8b00c85eb961bc35fd6f6453dcf4270eb2600b02d",
     "crates/horizon-client/src/game/stations.rs": "d0cc1211ae92161b808ceb3251a0d3b0b7b5be79e36ed0bc036c1ab5fb8201b5",
-    "crates/horizon-client/src/lan/guest.rs": "1e952e6da28064c1f90e593238b299dbf57573082f9cf755595c3f2aed9e6660"
+    "crates/horizon-client/src/lan/guest.rs": "1e952e6da28064c1f90e593238b299dbf57573082f9cf755595c3f2aed9e6660",
+    "crates/horizon-client/src/game/enchant_effects.rs": "f3b389813cd1c3f8e338cbd857854329389a1defa54dbf6fc4ec1d5e279a5472"
   },
   "horizon_repository": "https://github.com/horizon-rust/horizon",
   "horizon_mixins_repository": "https://github.com/horizon-rust/horizon-mixins",

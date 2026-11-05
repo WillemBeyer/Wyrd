@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Bind a pickaxe as Deep Delver by sneak-using an enchanting table with both memories in the main hand and one amethyst shard in the offhand; the binding is one custom-data marker and survives inventory sync and relogging.
+- Add a configurable Tunnel Break keybind (default V) that activates the existing 3x3, six-block Tunnel Break only for a bound eligible pickaxe; keep `/wyrd` diagnostics and use the command path internally.
+- Show Deep Delver, Tunnel Break and the remaining cooldown in the bound pickaxe's tooltip.
+- Extend Deepslate Memory, Ore Memory, their bonuses, inventory sync and tooltips from iron to diamond and netherite pickaxes.
+- Retarget the existing bonus hooks to pinned-source-compatible HEAD, MODIFY_ARG and RETURN sites; the pinned mixin tool rejects non-HEAD injection into functions with closures.
 - Preserve pickaxe memories during inventory sync so the tooltip can show their effects in singleplayer and LAN.
 
 - Give iron pickaxes Ore Memory for a 10% chance of one extra resource on later ore breaks without Silk Touch.
